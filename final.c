@@ -4,11 +4,13 @@
  *
  *  Key bindings:
  *  arrows     Change view angle
- *  m          Toggle shaders
- *  0          Set view angle to 0
+ *  space bar   Change view height
+ *  m          Toggle scene
+ *  0          Set th and ph to 0 - overhead view angle
  *  l          Turn light movement on/off
  *  [ and ]    Change light position
  *  { and }    Change light height
+ *  wasdrf     Move an object wtih gex/gey/gez  
  *  ESC        Exit
  */
 #include "CSCIx239.h"
@@ -448,8 +450,8 @@ void Bar()
       }
    }
    // Roof
-   Cube(0,17.8,-8.5, 24,10,1, 0,53.13, tex[5]);
-   Cube(0,17.8,8.5, 24,10,1, 0,-53.13, tex[5]);
+   Cube(0,17.8,-8.5, 24,10,1, 0,53.13, tex[12]);
+   Cube(0,17.8,8.5, 24,10,1, 0,-53.13, tex[12]);
    // roof side walls
    // left wall
    for(int i=0;i<3;i++){
@@ -469,7 +471,7 @@ void Bar()
    }
    // beams - verticle
    for(int i=0;i<4;i++){
-      Cube(-20+i*10,18,0, .5,6,.5, 0,0, tex[5]);
+      Cube(-20+i*10,18.1,0, .5,6,.5, 0,0, tex[5]);
    }
    // bar counter
    normmap_cube(0+-21,4,-9, 4, .25, 2, 0, 0, 0, tex[5], tex[6]);
@@ -486,6 +488,9 @@ void Bar()
    table(-2,0,11); chair(-11,0,0,90); chair(11,0,4,-90);
    table(12,0,11); chair(-11,0,14.5,90); chair(11,0,-9,-90);
    table(18,0,-7); chair(18,0,-5,0); chair(-18,0,9,180);
+   // bar chairs
+   chair(-11,0,-5,0);
+   chair(-3,0,-5,0);
    // record player 
    table(21,0,4);
    Recordplayer(-18,5,-8);
@@ -927,7 +932,7 @@ int main(int argc,char* argv[])
    tex[9] = LoadTexBMP("terrheight2.bmp");
    tex[10] = LoadTexBMP("terrnormal3.bmp");
    tex[11] = LoadTexBMP("greengrass.bmp");
-
+   tex[12] = LoadTexBMP("darkwood.bmp");
 
    //  Initialize flys
    InitLoc();
