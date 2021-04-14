@@ -1,0 +1,17 @@
+Homework 9: Colin Craighead
+
+
+This program curves a rectangle based on the cos function
+The cos wave's wave length and anmplitude can be ajusted
+The higher the amp and lower the wave length the more folds the rectangle needs
+
+*  Key bindings:
+ *  +/-        Number of folds
+ *  a/A        Increase or dec amplitude of wave
+ *  q/Q        Increase and dec wave length
+ *  r          Reset folds, amp, and wave length to starting values
+ *  arrows     Change view angle
+ *  0          Set view angle to 0
+ *  [ and ]    Change light position
+ *  { and }    Change light height
+ *  ESC        Exit
