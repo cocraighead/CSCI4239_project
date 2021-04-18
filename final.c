@@ -35,12 +35,15 @@ float l_ambient =0.3;    // Light properties
 float l_diffuse = 0.5;
 float l_specular = 0.8;
 // Texture gloabls
-int tex[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0};     //  Textures
+int tex[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};     //  Textures
 // Firefly globals
 int N=128;       //  Number of bodies
 int src=0;        //  Offset of first fly in source
 int dst=0;        //  Offset of first fly in destination
-double vel=0.1;   //  Relative speed
+double vel=0.04;   //  Relative speed
+int ff_x = 50;
+int ff_y = 48;
+int ff_z = -52;
 int box_size = 8; // fire flys stuck in a box
 
 // global edit
@@ -56,6 +59,113 @@ float PLX = 0; // Players looking at x location
 float PLZ = -1; // Players looking at z location
 float PLY = 0;
 int pheta = 0; // Angle the player is turned at
+
+
+void sky(float D, int sidetex, int topbottex)
+{
+   glColor3f(1,1,1);
+   glActiveTexture(GL_TEXTURE0);
+   glEnable(GL_TEXTURE_2D);
+
+   //  Sides
+   glBindTexture(GL_TEXTURE_2D,sidetex);
+   glBegin(GL_QUADS);
+   glTexCoord2f(0.00,0); glVertex3f(-D,-D,-D);
+   glTexCoord2f(0.25,0); glVertex3f(+D,-D,-D);
+   glTexCoord2f(0.25,1); glVertex3f(+D,+D,-D);
+   glTexCoord2f(0.00,1); glVertex3f(-D,+D,-D);
+
+   glTexCoord2f(0.25,0); glVertex3f(+D,-D,-D);
+   glTexCoord2f(0.50,0); glVertex3f(+D,-D,+D);
+   glTexCoord2f(0.50,1); glVertex3f(+D,+D,+D);
+   glTexCoord2f(0.25,1); glVertex3f(+D,+D,-D);
+
+   glTexCoord2f(0.50,0); glVertex3f(+D,-D,+D);
+   glTexCoord2f(0.75,0); glVertex3f(-D,-D,+D);
+   glTexCoord2f(0.75,1); glVertex3f(-D,+D,+D);
+   glTexCoord2f(0.50,1); glVertex3f(+D,+D,+D);
+
+   glTexCoord2f(0.75,0); glVertex3f(-D,-D,+D);
+   glTexCoord2f(1.00,0); glVertex3f(-D,-D,-D);
+   glTexCoord2f(1.00,1); glVertex3f(-D,+D,-D);
+   glTexCoord2f(0.75,1); glVertex3f(-D,+D,+D);
+   glEnd();
+
+   //  Top and bottom
+   glBindTexture(GL_TEXTURE_2D,topbottex);
+   glBegin(GL_QUADS);
+   glTexCoord2f(0.0,0); glVertex3f(+D,+D,-D);
+   glTexCoord2f(0.5,0); glVertex3f(+D,+D,+D);
+   glTexCoord2f(0.5,1); glVertex3f(-D,+D,+D);
+   glTexCoord2f(0.0,1); glVertex3f(-D,+D,-D);
+
+   glTexCoord2f(1.0,1); glVertex3f(-D,-D,+D);
+   glTexCoord2f(0.5,1); glVertex3f(+D,-D,+D);
+   glTexCoord2f(0.5,0); glVertex3f(+D,-D,-D);
+   glTexCoord2f(1.0,0); glVertex3f(-D,-D,-D);
+   glEnd();
+
+   // unbind 
+   glDisable(GL_TEXTURE_2D);
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, 0);
+
+}
+
+void water_normmap_quad(float x, float y, float z, float dx, float dy, float dz, float rx, float ry, float rz, int image_tex, int norm_tex)
+{
+   //  Select shader
+   glUseProgram(shader[1]);
+   //  Walls material and color
+   float color[][4] = {{0,0,0,0},{.5,.5,.5,0},{1,1,0,0},{0,1,0,0},{0,1,1,0},{0,0,1,0},{1,0,1,0},{1,1,1,1}};
+   glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,96.0);
+   glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,color[7]);
+   glMaterialfv(GL_FRONT_AND_BACK,GL_EMISSION,color[0]);
+   glColor4fv(color[1]);
+   glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT,color[1]);
+   glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,color[1]);
+   // set texture uniforms
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, image_tex);
+   int id = glGetUniformLocation(shader[1],"tex");
+   glUniform1i(id,0);
+   glActiveTexture(GL_TEXTURE1);
+   glBindTexture(GL_TEXTURE_2D, norm_tex);
+   id = glGetUniformLocation(shader[1],"norms");
+   glUniform1i(id,1);
+   // cube front face
+   // save transformation
+   glPushMatrix();
+   // transformations
+   glTranslated(x,y,z);
+   glRotated(rx,1,0,0);
+   //glRotated(ry,0,1,0);
+   // glRotated(rz,0,0,1);
+   // glScaled(dx,dy,1);
+   // get current model view matrix
+   float modelview_matrix[16]; 
+   glGetFloatv(GL_MODELVIEW_MATRIX, modelview_matrix); 
+   // get Normal matrix
+   float normal_matrix[9];
+   mat4normalMatrix(modelview_matrix, normal_matrix);
+   id = glGetUniformLocation(shader[1],"NormalMatrix");
+   glUniformMatrix3fv(id,1,0,normal_matrix);
+   // Wall
+   glBegin(GL_QUADS);
+   glTexCoord2f(0,0); glVertex3f(-1*dx,-1*dy, 0);
+   glTexCoord2f(1*dx,0); glVertex3f(+1*dx,-1*dy, 0);
+   glTexCoord2f(1*dx,1*dy); glVertex3f(+1*dx,+1*dy, 0);
+   glTexCoord2f(0,1*dy); glVertex3f(-1*dx,+1*dy, 0);
+   glEnd();
+   glPopMatrix();
+   // unbind textures
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glActiveTexture(GL_TEXTURE1);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   //  Revert to fixed pipeline
+   glUseProgram(0);
+}
 
 void normmap_quad(float x, float y, float z, float dx, float dy, float dz, float rx, float ry, float rz, int image_tex, int norm_tex)
 {
@@ -366,7 +476,7 @@ void record_disc(float x, float y, float z, float dx, float dy, float dz, float 
 }
 
 // record player
-void Recordplayer(int x, int y, int z)
+void record_player(int x, int y, int z)
 {
    record_disc(x+0,y+0.08,z+0, 0.85,0.85,1, -90,0,zh, tex[7],tex[8]);
    //  Draw cube 1 - bottem
@@ -397,6 +507,28 @@ void table(int x, int y, int z)
    Cube(x+0,y+.1,z+0, .1,.2,1.2, 0,0, tex[5]);
    // x bottem cross
    Cube(x+0,y+.1,z+0, 1.2,.2,.1, 0,0, tex[5]);
+}
+
+void picktable(int x, int y, int z)
+{
+   // table top
+   Cube(x+-1.25,y+2.3,z+0, .25,.1,2.5, 0,0, tex[5]);
+   Cube(x+-.75,y+2.3,z+0, .25,.1,2.5, 0,0, tex[5]);
+   Cube(x+-.25,y+2.3,z+0, .25,.1,2.5, 0,0, tex[5]);
+   Cube(x+.25,y+2.3,z+0, .25,.1,2.5, 0,0, tex[5]);
+   Cube(x+.75,y+2.3,z+0, .25,.1,2.5, 0,0, tex[5]);
+   Cube(x+1.25,y+2.3,z+0, .25,.1,2.5, 0,0, tex[5]);
+   // seats
+   Cube(x+2.2,y+1.2,z+0, .5,.1,2.5, 0,0, tex[5]);
+   Cube(x+-2.2,y+1.2,z+0, .5,.1,2.5, 0,0, tex[5]);
+   // seat holder
+   Cube(x+0,y+.8,z+2.2, 2.7,.3,.1, 0,0, tex[5]);
+   Cube(x+0,y+.8,z+-2.2, 2.7,.3,.1, 0,0, tex[5]);
+   // legs
+   Cube(x+2,y+.9,z+2.1, .2,.1,1.5, -30,-90, tex[5]);
+   Cube(x+-2,y+.9,z+2.1, .2,.1,1.5, 30,-90, tex[5]);
+   Cube(x+2,y+.9,z+-2.1, .2,.1,1.5, -30,-90, tex[5]);
+   Cube(x+-2,y+.9,z+-2.1, .2,.1,1.5, 30,-90, tex[5]);
 }
 
 void chair(int x, int y, int z, int ry)
@@ -493,7 +625,7 @@ void Bar()
    chair(-3,0,-5,0);
    // record player 
    table(21,0,4);
-   Recordplayer(-18,5,-8);
+   record_player(-18,5,-8);
 }
 
 //  Fly
@@ -520,13 +652,13 @@ void Move(int k)
    float az = (rand()%1000)/10000.0 - .05;
    //  Update velocity
    // flip vel if fly is close to box edge
-   if(flys[k0].x > box_size || flys[k0].x < -box_size){
+   if(flys[k0].x > ff_x+box_size || flys[k0].x < ff_x-box_size){
       flys[k0].u *= -1;
    }
-   if(flys[k0].y > box_size || flys[k0].y < -box_size){
+   if(flys[k0].y > ff_y+box_size || flys[k0].y < ff_y-box_size){
       flys[k0].v *= -1;
    }
-   if(flys[k0].z > box_size || flys[k0].z < -box_size){
+   if(flys[k0].z > ff_z+box_size || flys[k0].z < ff_z-box_size){
       flys[k0].w *= -1;
    }
    flys[k1].u = flys[k0].u + ax;
@@ -567,9 +699,9 @@ void rand3(float Sx,float Sy,float Sz,float* X,float* Y,float* Z)
       z = rand()/(0.5*RAND_MAX)-1;
       d = x*x+y*y+z*z;
    }
-   *X = Sx*x;
-   *Y = Sy*y;
-   *Z = Sz*z;
+   *X = Sx*x + ff_x;
+   *Y = Sy*y + ff_y;
+   *Z = Sz*z + ff_z;
 }
 
 //
@@ -686,78 +818,66 @@ void terrain()
    glUseProgram(0);
 }
 
+void fireflies()
+{
+   // disable depth for particles
+   glDepthMask(0);
+   
+   //  Integrate
+   Step();
+
+   //  set vars in shaders
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, tex[2]);
+   glUseProgram(shader[2]);
+   int id = glGetUniformLocation(shader[2],"firefly");
+   glUniform1i(id,0);
+   id = glGetUniformLocation(shader[2],"size");
+   glUniform1f(id,0.3);
+   glBlendFunc(GL_ONE,GL_ONE);
+   glEnable(GL_BLEND);
+
+   //  Draw points using vertex arrays
+   glEnableClientState(GL_VERTEX_ARRAY);
+   glEnableClientState(GL_COLOR_ARRAY);
+   glVertexPointer(3,GL_FLOAT,sizeof(Fly),&flys[0].x);
+   glColorPointer(3,GL_FLOAT,sizeof(Fly),&flys[0].r);
+   //  Draw all points from dst count N
+   glDrawArrays(GL_POINTS,dst,N);
+   //  Disable vertex arrays
+   glDisableClientState(GL_VERTEX_ARRAY);
+   glDisableClientState(GL_COLOR_ARRAY);
+   // disable shader and blending
+   glUseProgram(0);
+   glDisable(GL_BLEND);
+   //  reset testure and depth
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glDepthMask(1);
+   glDisable(GL_TEXTURE_2D);
+   glColor4f(1,1,1,1);
+}
+
 void Campground()
 {
-   // // forest quads
-   // glActiveTexture(GL_TEXTURE0);
-   // glBindTexture(GL_TEXTURE_2D, tex[4]);
-   // glEnable(GL_TEXTURE_2D);
-   // glTexEnvi(GL_TEXTURE_ENV , GL_TEXTURE_ENV_MODE , GL_MODULATE);
-   // glColor4f(.25,.25,.25,1);
-   // glBegin(GL_QUADS);
-   // glTexCoord2f(0,1); glVertex3f(-10,-10, -10);
-   // glTexCoord2f(0,0); glVertex3f(10,-10, -10);
-   // glTexCoord2f(1,0); glVertex3f(10,-10, 10);
-   // glTexCoord2f(1,1); glVertex3f(-10,-10, 10);
-   // glEnd();
-   // glColor4f(.5,.5,.5,1);
-   // glActiveTexture(GL_TEXTURE0);
-   // glBindTexture(GL_TEXTURE_2D, tex[3]);
-   // glBegin(GL_QUADS);
-   // glTexCoord2f(0,0); glVertex3f(-10,-10, -10);
-   // glTexCoord2f(1,0); glVertex3f(10,-10, -10);
-   // glTexCoord2f(1,1); glVertex3f(10,10, -10);
-   // glTexCoord2f(0,1); glVertex3f(-10,10, -10);
-   // glEnd();
-   // glBegin(GL_QUADS);
-   // glTexCoord2f(1,0); glVertex3f(-10,-10, -10);
-   // glTexCoord2f(0,0); glVertex3f(-10,-10, 10);
-   // glTexCoord2f(0,1); glVertex3f(-10,10, 10);
-   // glTexCoord2f(1,1); glVertex3f(-10,10, -10);
-   // glEnd();
-   // glColor4f(1,1,1,1);
-   // // disable depth for particles
-   // glDepthMask(0);
-   
-   // //  Integrate
-   // Step();
-
-   // //  set vars in shaders
-   // glActiveTexture(GL_TEXTURE0);
-   // glBindTexture(GL_TEXTURE_2D, tex[2]);
-   // glUseProgram(shader[2]);
-   // int id = glGetUniformLocation(shader[2],"firefly");
-   // glUniform1i(id,0);
-   // id = glGetUniformLocation(shader[2],"size");
-   // glUniform1f(id,0.3);
-   // glBlendFunc(GL_ONE,GL_ONE);
-   // glEnable(GL_BLEND);
-
-   // //  Draw points using vertex arrays
-   // glEnableClientState(GL_VERTEX_ARRAY);
-   // glEnableClientState(GL_COLOR_ARRAY);
-   // glVertexPointer(3,GL_FLOAT,sizeof(Fly),&flys[0].x);
-   // glColorPointer(3,GL_FLOAT,sizeof(Fly),&flys[0].r);
-   // //  Draw all points from dst count N
-   // glDrawArrays(GL_POINTS,dst,N);
-   // //  Disable vertex arrays
-   // glDisableClientState(GL_VERTEX_ARRAY);
-   // glDisableClientState(GL_COLOR_ARRAY);
-   // // disable shader and blending
-   // glUseProgram(0);
-   // glDisable(GL_BLEND);
-   // //  reset testure and depth
-   // glActiveTexture(GL_TEXTURE0);
-   // glBindTexture(GL_TEXTURE_2D, 0);
-   // glDepthMask(1);
-   // glDisable(GL_TEXTURE_2D);
-   // glColor4f(1,1,1,1);   
+   // campsite platform
+   Cube(50,37,-39, 14,1,1, 0,0, tex[12]);
+   Cube(50,37,-65, 14,1,1, 0,0, tex[12]);
+   Cube(63,37,-52, 1,1,12, 0,0, tex[12]);
+   Cube(37,37,-52, 1,1,12, 0,0, tex[12]);
+   Cube(50,36.5,-52, 12,1,12, 0,0, tex[4]);
+   // Table
+   picktable(55,38,-57);
+   // lake
+   water_normmap_quad(11,-2,90, 50,50,1, -90,0,0, tex[16],tex[16]);
+   // terrain
    terrain();
 }
 
 void anyitem()
 {
-   Recordplayer(0,0,0);
+   //record_player(0,0,0);
+   water_normmap_quad(0,0,0, 4,2,1, -90,0,0, tex[16],tex[16]);
 }
 
 //
@@ -786,6 +906,15 @@ void display(GLFWwindow* window)
    }
 
    glDisable(GL_LIGHTING);
+   if(mode == 1){
+      sky(268,tex[13],tex[14]);
+   }
+   // firefly particles
+   if(mode == 1){
+      fireflies();
+   }
+
+
 
    //  Display parameters
    glColor3f(1,1,1);
@@ -933,6 +1062,10 @@ int main(int argc,char* argv[])
    tex[10] = LoadTexBMP("terrnormal3.bmp");
    tex[11] = LoadTexBMP("greengrass.bmp");
    tex[12] = LoadTexBMP("darkwood.bmp");
+   tex[13] = LoadTexBMP("nightskybox1.bmp");
+   tex[14] = LoadTexBMP("nightskybox2.bmp");
+   tex[15] = LoadTexBMP("starwater.bmp");
+   tex[16] = LoadTexBMP("waternormal.bmp");
 
    //  Initialize flys
    InitLoc();

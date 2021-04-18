@@ -5,7 +5,7 @@ Each scene will have a couple elements that use shaders.
 
 *  Key bindings:
  *  arrows     Change view angle
- *  space bar   Change view height
+ *  space bar  Change view height
  *  m          Toggle scene
  *  0          Set th and ph to 0 - overhead view angle
  *  l          Turn light movement on/off
@@ -16,4 +16,20 @@ Each scene will have a couple elements that use shaders.
 
 
  PROJECT REVIEW SECTION
- 
+
+ Look at 
+ - Terrain 
+ - Norm maps: brick, wood, record disc
+ - Fireflys - still in progress so commented out
+
+ todo 
+ - add firewords from standalone file and improve visuals
+ - finish fireflies and add blinking
+ - Create neon sign for the bar and add blur post processing around it to make it look luminescent 
+ - Drink being filled with particles of drinks splash shader
+ - Simple grass geomotry shader where points form a leaf of grass and that is turned into billboarded rectangles
+ - Add other details to the scenes like a picknick table and camp fire to the campground
+ - Add more detail to the record player.
+
+ Stretch
+ - work on making the lake surface a flat mirror
