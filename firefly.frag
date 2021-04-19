@@ -1,5 +1,5 @@
 //
-//  nBody fragment shader
+//  firefly fragment shader
 //
 #version 150
 

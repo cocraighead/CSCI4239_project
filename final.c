@@ -25,7 +25,7 @@ float dim = 32;      //  World dimension
 int mode = 0;
 const char* text[] = {"Bar","Camp Ground","Any"};
 // Shader Globals
-int shader[] = {0,0,0,0};  //  Shaders
+int shader[] = {0,0,0,0,0};  //  Shaders
 // light globals
 int move_light = 1;      // if the light will be moving
 int zh=0;                //  Light angle
@@ -59,6 +59,51 @@ float PLX = 0; // Players looking at x location
 float PLZ = -1; // Players looking at z location
 float PLY = 0;
 int pheta = 0; // Angle the player is turned at
+
+// lines that make up neon sign
+float neonsignarr[] = {-1.0,0.0,0.0 ,0.0,1.0,1.0,
+                       -.812,.172,0.0 ,0.0,1.0,1.0, // line 1 -- Blue Mountains
+                       -.509,.535,0.0 ,0.0,1.0,1.0,
+                       -.407,.641,0.0 ,0.0,1.0,1.0, // line 2
+                       -.419,.641,0.0 ,0.0,1.0,1.0,
+                       -.354,.579,0.0 ,0.0,1.0,1.0, // line 3
+                       -.367,.580,0.0 ,0.0,1.0,1.0,
+                       -.121,.809,0.0 ,0.0,1.0,1.0, // line 4
+                       -.131,.808,0.0 ,0.0,1.0,1.0,
+                        .007,.695,0.0 ,0.0,1.0,1.0, // line 5
+                       -.005,.695,0.0 ,0.0,1.0,1.0,
+                        .035,.735,0.0 ,0.0,1.0,1.0, // line 6
+                        .024,.734,0.0 ,0.0,1.0,1.0,
+                        .213,.594,0.0 ,0.0,1.0,1.0, // line 7
+                        .201,.594,0.0 ,0.0,1.0,1.0,
+                        .242,.638,0.0 ,0.0,1.0,1.0, // line 8
+                        .230,.636,0.0 ,0.0,1.0,1.0,
+                        .691,.300,0.0 ,0.0,1.0,1.0 // line 9
+                       };
+
+void neon_sign(float x, float y, float z, float s){
+   glPushMatrix();
+   // transformations
+   glTranslated(x,y,z);
+   glScaled(s,s,1);
+   // geo shader
+   glUseProgram(shader[4]);
+   int id = glGetUniformLocation(shader[4],"r");
+   glUniform1f(id,0.01);
+   //  Draw points using vertex arrays
+   glEnableClientState(GL_VERTEX_ARRAY);
+   glEnableClientState(GL_COLOR_ARRAY);
+   glVertexPointer(3,GL_FLOAT,24,&neonsignarr[0]);
+   glColorPointer(3,GL_FLOAT,24,&neonsignarr[3]);
+   //  Draw all lines
+   glDrawArrays(GL_LINES,0,18);
+   //  Disable vertex arrays
+   glDisableClientState(GL_VERTEX_ARRAY);
+   glDisableClientState(GL_COLOR_ARRAY);
+   // disable shader and blending
+   glPopMatrix();
+   glUseProgram(0);
+}
 
 
 void sky(float D, int sidetex, int topbottex)
@@ -626,6 +671,8 @@ void Bar()
    // record player 
    table(21,0,4);
    record_player(-18,5,-8);
+   // neon sign
+   neon_sign(0,7,-15,2.0);
 }
 
 //  Fly
@@ -877,7 +924,8 @@ void Campground()
 void anyitem()
 {
    //record_player(0,0,0);
-   water_normmap_quad(0,0,0, 4,2,1, -90,0,0, tex[16],tex[16]);
+   // water_normmap_quad(0,0,0, 4,2,1, -90,0,0, tex[16],tex[16]);
+   neon_sign(0,0,0,1);
 }
 
 //
@@ -1048,6 +1096,7 @@ int main(int argc,char* argv[])
    shader[1] = CreateShaderProg("normmap.vert","normmap.frag");
    shader[2] = CreateShaderProgGeom("firefly.vert","firefly.geom","firefly.frag");
    shader[3] = CreateShaderProg("terrain.vert","terrain.frag");
+   shader[4] = CreateShaderProgGeom("neonsign.vert","neonsign.geom","neonsign.frag");
    //  Load textures
    tex[0] = LoadTexBMP("brickwall.bmp");
    tex[1] = LoadTexBMP("brickwallnormal.bmp");

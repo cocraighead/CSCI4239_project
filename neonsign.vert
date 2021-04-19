@@ -1,4 +1,4 @@
-//  firefly Vertex shader
+//  neonsign Vertex shader
 #version 120
 
 void main()

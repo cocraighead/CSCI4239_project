@@ -1,5 +1,5 @@
 //
-//  nBody geometry shader
+//  firefly geometry shader
 //  Billboards point to quad
 //
 
