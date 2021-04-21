@@ -25,7 +25,7 @@ float dim = 32;      //  World dimension
 int mode = 0;
 const char* text[] = {"Bar","Camp Ground","Any"};
 // Shader Globals
-int shader[] = {0,0,0,0,0,0};  //  Shaders
+int shader[] = {0,0,0,0,0,0,0};  //  Shaders
 // light globals
 int move_light = 1;      // if the light will be moving
 int zh=0;                //  Light angle
@@ -37,14 +37,260 @@ float l_specular = 0.8;
 // Texture gloabls
 int tex[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};     //  Textures
 // Firefly globals
-int N=128;       //  Number of bodies
+int n;
+int N_fly=128;       //  Number of bodies
 int src=0;        //  Offset of first fly in source
 int dst=0;        //  Offset of first fly in destination
-double vel=0.04;   //  Relative speed
+double vel_craig=0.04;   //  Relative speed
 int ff_x = 50;
 int ff_y = 47;
 int ff_z = -52;
 int box_size = 8; // fire flys stuck in a box
+
+// Firework Globals
+//  Set up attribute array indexes for program
+#define VELOCITY_ARRAY   4
+#define START_ARRAY 5
+#define DUR_ARRAY 6
+#define INIT_VEL_ARRAY 7
+static char* Name[] = { "","","","","Vel","Start","Dur","Vel_init",NULL };
+//  Point arrays
+#define N 25
+int fire_N = 10;
+float Vert[3 * N * N];
+float Color[3 * N * N];
+float Vel[3 * N * N];
+float Start[N * N];
+float Dur[N * N];
+float Vel_init[N * N];
+int flag = 0;
+//
+//  Random numbers with range and offset
+//
+static float frand(float rng, float off)
+{
+    return rand() * rng / RAND_MAX + off;
+}
+// Velocities of particle
+float xVel[10], yVel[10], zVel[10];
+// Different firework y velocities
+float timeApog; // Time at which the initial particle reaches apogee and explodes
+int explodeFlag = 1;
+int partCounter = 0;
+// Arrays for fireworks
+float x0[10] = {-35,-25,-15,-5,5,15,25,30,45,50 };
+float y0_sos[10] = { 25,25,25,25,25,25,25,25,25,25 };
+float z0[10] =  { -35,-25,-15,-5,5,15,25,30,45,50 };
+float startTime[10] = { 0,2,5,6,9,10,13,15,17,17 };
+float yVel_0[10] = { 30,35,40,30,35,40,30,35,40,30 };
+//  Array Pointers
+float* vert = Vert;
+float* color = Color;
+float* vel = Vel;
+float* start = Start;
+float* duration = Dur;
+float* vel_init = Vel_init;
+
+// First phase of firework particle shooting up
+void firework_init(int i, float r1, float r2, float g1, float g2, float b1, float b2) {
+    //  Location x,y,z
+    *vert++ = x0[i];
+    *vert++ = y0_sos[i];
+    *vert++ = z0[i];
+    //  Color r,g,b (0.5-1.0)
+    *color++ = frand(r1, r2);
+    *color++ = frand(g1, g2);
+    *color++ = frand(b1, b2);
+
+    // Kinematics for tracking start of explosion 
+    xVel[i] = 1.0 * frand(0.5, 0.5);
+    yVel[i] = yVel_0[i];
+    zVel[i] = 1.0 * frand(0.5, 0.5);
+
+    //  Velocity
+    *vel++ = xVel[i];
+    *vel++ = yVel[i];
+    *vel++ = zVel[i];
+
+    //  Launch time
+    *start++ = startTime[i];
+    // Duration
+    *duration++ = 0.0;
+    // Initial particle velocity
+    *vel_init++ = yVel[i];
+    // The time at which the initial particle will reach apogee
+    timeApog = yVel[i] / 9.8;
+}
+
+// Explosion phase for fireworks
+void firework_exp(int i, float r1, float r2, float g1, float g2, float b1, float b2, float vx, float vy, float vz, float dur) {
+    timeApog = yVel[i] / 9.8;
+    *vert++ = x0[i] + xVel[i] * timeApog;
+    *vert++ = y0_sos[i] + yVel[i] * timeApog - 0.5 * 9.8 * timeApog * timeApog;
+    *vert++ = z0[i] + zVel[i] * timeApog;
+    //  Color r,g,b (0.5-1.0)
+    *color++ = frand(r1, r2);
+    *color++ = frand(g1, g2);
+    *color++ = frand(b1, b2);
+    // Duration
+    *duration++ = dur;
+    // Initial particle velocity
+    *vel_init++ = 0;
+
+    //  Velocity
+    float ang = (rand()) / ((RAND_MAX / 7)); // random float between 0 and 7
+    *vel++ = frand(vx * cos(ang), 0);
+    *vel++ = frand(vy, 0);
+    *vel++ = frand(vz * sin(ang), 0);
+    //  Launch time
+    *start++ = startTime[i] + timeApog + frand(0.5, 0);
+}
+
+
+//
+//  Initialize particles for firework shader
+//
+void InitPart(void)
+{
+    //  Loop over NxN patch
+    int i, j;
+    n = N;
+
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++)
+        {
+            // Beginning of  firework 1 
+            if (i == 0 && j == 0) {
+                firework_init(0, 0.5, 0.5, 0.25, 0.75, 0.25, 0.725);
+            // Beginning of  firework 2
+            }
+            else if (i == 1 && j == 1) {
+                firework_init(1, 0.25, 0.75, 0.25, 0.5, 0.25, 0.5);
+            }
+            // Beginning of  firework 3
+            else if (i == 2 && j == 2) {
+                firework_init(2, 0.25, 0.75, 0.25, 0.5, 0.25, 0.5);
+            }
+            // Beginning of  firework 4
+            else if (i == 3 && j == 3) {
+                firework_init(3, 0.25, 0.75, 0.25, 0.5, 0.25, 0.5);
+            }
+            // Beginning of  firework 5
+            else if (i == 4 && j == 4) {
+                firework_init(4, 0.25, 0.75, 0.25, 0.5, 0.25, 0.5);
+            }
+            // Beginning of  firework 6
+            else if (i == 5 && j == 5) {
+                firework_init(5, 0.25, 0.75, 0.25, 0.5, 0.25, 0.5);
+            }
+            // Beginning of  firework 7
+            else if (i == 6 && j == 6) {
+                firework_init(6, 0.25, 0.75, 0.25, 0.5, 0.25, 0.5);
+            }
+            // Beginning of  firework 8
+            else if (i == 7 && j == 7) {
+                firework_init(7, 0.25, 0.75, 0.25, 0.5, 0.25, 0.5);
+            }
+            // Beginning of  firework 9
+            else if (i == 8 && j == 8) {
+            firework_init(8, 0.25, 0.75, 0.25, 0.5, 0.25, 0.5);
+            }
+            // Beginning of  firework 10
+            else if (i == 9 && j == 9) {
+            firework_init(9, 0.25, 0.75, 0.25, 0.5, 0.25, 0.5);
+            }
+
+            else { // Firework Explosion
+
+            //  Location x,y,z using kinematics (ignoring drag) -> start where initial rocket ends at
+                if (partCounter < round(n * n / 10.0)) {
+                    firework_exp(0, 0.2, 0.5, 0.25, 0.75, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
+                }
+                else if ( (partCounter > round(n * n / 10.0)) && (partCounter < round(2*n * n / 10.0))) {
+                    firework_exp(1, 0.2, 0.5, 0.25, 0.75, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
+                }
+                else if ((partCounter > round(2*n * n / 10.0)) && (partCounter < round(3 * n * n / 10.0))) {
+                    firework_exp(2, 0.2, 0.5, 0.25, 0.75, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
+                }
+                else if ((partCounter > round(3*n * n / 10.0)) && (partCounter < round(4 * n * n / 10.0))) {
+                    firework_exp(3, 0.2, 0.5, 0.25, 0.75, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
+                }
+                else if ((partCounter > round(4*n * n / 10.0)) && (partCounter < round(5 * n * n / 10.0))) {
+                    firework_exp(4, 0.2, 0.5, 0.25, 0.75, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
+                }
+                else if ((partCounter > round(5*n * n / 10.0)) && (partCounter < round(6 * n * n / 10.0))) {
+                    firework_exp(5, 0.2, 0.5, 0.25, 0.75, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
+                }
+                else if ((partCounter > round(6*n * n / 10.0)) && (partCounter < round(7 * n * n / 10.0))) {
+                    firework_exp(6, 0.2, 0.5, 0.25, 0.75, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
+                }
+                else if ((partCounter > round(7*n * n / 10.0)) && (partCounter < round(8 * n * n / 10.0))) {
+                    firework_exp(7, 0.2, 0.5, 0.25, 0.75, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
+                }
+                else if ((partCounter > round(8*n * n / 10.0)) && (partCounter < round(9 * n * n / 10.0))) {
+                    firework_exp(8, 0.2, 0.5, 0.25, 0.75, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
+                }
+                else {
+                    firework_exp(9, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 20.0, 25.0, 20.0, 1.0);
+                }
+                partCounter++;
+            }
+        }
+    }
+}
+
+//
+//  Draw particles for fireworks
+//
+void DrawPart(void)
+{
+    //  Set particle size
+    glPointSize(3);
+    //  Point vertex location to local array Vert
+    glVertexPointer(3, GL_FLOAT, 0, Vert);
+    //  Point color array to local array Color
+    glColorPointer(3, GL_FLOAT, 0, Color);
+    //  Point attribute arrays to local arrays
+    glVertexAttribPointer(VELOCITY_ARRAY, 3, GL_FLOAT, GL_FALSE, 0, Vel);
+    glVertexAttribPointer(START_ARRAY, 1, GL_FLOAT, GL_FALSE, 0, Start);
+    glVertexAttribPointer(DUR_ARRAY, 1, GL_FLOAT, GL_FALSE, 0, Dur);
+    glVertexAttribPointer(INIT_VEL_ARRAY, 1, GL_FLOAT, GL_FALSE, 0, Vel_init);
+
+    //  Enable arrays used by DrawArrays
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glEnableVertexAttribArray(VELOCITY_ARRAY);
+    glEnableVertexAttribArray(START_ARRAY);
+    glEnableVertexAttribArray(DUR_ARRAY);
+    glEnableVertexAttribArray(INIT_VEL_ARRAY);
+    //  Set transparent large particles
+    if (mode)
+    {
+        glEnable(GL_POINT_SPRITE);
+        glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        glDepthMask(0);
+    }
+    //  Draw arrays
+    glDrawArrays(GL_POINTS, 0, n * n);
+    //  Reset
+    if (mode)
+    {
+        glDisable(GL_POINT_SPRITE);
+        glDisable(GL_BLEND);
+        glDepthMask(1);
+    }
+    //  Disable arrays
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableVertexAttribArray(VELOCITY_ARRAY);
+    glDisableVertexAttribArray(START_ARRAY);
+    glDisableVertexAttribArray(DUR_ARRAY);
+    glDisableVertexAttribArray(INIT_VEL_ARRAY);
+}
+
+
 
 // global edit
 int gex =0;
@@ -917,9 +1163,9 @@ void Step()
 {
    int k;
    //  Switch source and destination
-   src = src?0:N;
-   dst = dst?0:N;
-   for (k=0;k<N;k++)
+   src = src?0:N_fly;
+   dst = dst?0:N_fly;
+   for (k=0;k<N_fly;k++)
       Move(k);
 }
 
@@ -962,15 +1208,15 @@ void InitLoc()
 {
    int k;
    //  Allocate room for twice as many bodies to facilitate ping-pong
-   if (!flys) flys = malloc(2*N*sizeof(Fly));
-   if (!flys) Fatal("Error allocating memory for %d flys\n",N);
-   src = N;
+   if (!flys) flys = malloc(2*N_fly*sizeof(Fly));
+   if (!flys) Fatal("Error allocating memory for %d flys\n",N_fly);
+   src = N_fly;
    dst = 0;
    //  Assign random locations
-   for (k=0;k<N;k++)
+   for (k=0;k<N_fly;k++)
    {
       rand_loc(&flys[k].x,&flys[k].y,&flys[k].z);
-      rand_vel(vel,vel,vel,&flys[k].u,&flys[k].v,&flys[k].w);
+      rand_vel(vel_craig,vel_craig,vel_craig,&flys[k].u,&flys[k].v,&flys[k].w);
       switch (k%2)
       {
          case 0:
@@ -984,9 +1230,9 @@ void InitLoc()
            flys[k].b = 0.5;
            break;
       }
-      flys[k+N].r = flys[k].r;
-      flys[k+N].g = flys[k].g;
-      flys[k+N].b = flys[k].b;
+      flys[k+N_fly].r = flys[k].r;
+      flys[k+N_fly].g = flys[k].g;
+      flys[k+N_fly].b = flys[k].b;
    }
 }
 
@@ -1094,7 +1340,7 @@ void fireflies()
    glVertexPointer(3,GL_FLOAT,sizeof(Fly),&flys[0].x);
    glColorPointer(3,GL_FLOAT,sizeof(Fly),&flys[0].r);
    //  Draw all points from dst count N
-   glDrawArrays(GL_POINTS,dst,N);
+   glDrawArrays(GL_POINTS,dst,N_fly);
    //  Disable vertex arrays
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_COLOR_ARRAY);
@@ -1107,6 +1353,26 @@ void fireflies()
    glDepthMask(1);
    glDisable(GL_TEXTURE_2D);
    glColor4f(1,1,1,1);
+}
+
+void fireworkShader() {
+    glUseProgram(shader[6]);
+    //  Set time
+    int id = glGetUniformLocation(shader[6], "time");
+    glUniform1f(id, glfwGetTime());
+    id = glGetUniformLocation(shader[6], "Noise3D");
+    glUniform1i(id, 1);
+    id = glGetUniformLocation(shader[6], "img");
+    glUniform1i(id, 0);
+    id = glGetUniformLocation(shader[6], "flag");
+    glUniform1i(id, flag);
+
+    //  Draw the particles
+    DrawPart();
+
+    //  No shader for what follows
+    glUseProgram(0);
+
 }
 
 void Campground()
@@ -1123,6 +1389,7 @@ void Campground()
    water_normmap_quad(11,-2,90, 50,50,1, -90,0,0, tex[16],tex[16]);
    // terrain
    terrain();
+
 }
 
 void anyitem()
@@ -1164,6 +1431,7 @@ void display(GLFWwindow* window)
    // firefly particles
    if(mode == 1){
       fireflies();
+      fireworkShader();
    }
 
 
@@ -1302,6 +1570,7 @@ int main(int argc,char* argv[])
    shader[3] = CreateShaderProg("terrain.vert","terrain.frag");
    shader[4] = CreateShaderProgGeom("neonsign.vert","neonsign.geom","neonsign.frag");
    shader[5] = CreateShaderProg("neon_normmap.vert","neon_normmap.frag");
+   shader[6] = CreateShaderProgAttr("firework.vert", NULL, Name);
    //  Load textures
    tex[0] = LoadTexBMP("brickwall.bmp");
    tex[1] = LoadTexBMP("brickwallnormal.bmp");
@@ -1323,6 +1592,8 @@ int main(int argc,char* argv[])
 
    //  Initialize flys
    InitLoc();
+   //  Initialize particles
+   InitPart();
 
    //  Event loop
    ErrCheck("init");
