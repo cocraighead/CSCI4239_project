@@ -25,7 +25,7 @@ float dim = 32;      //  World dimension
 int mode = 0;
 const char* text[] = {"Bar","Camp Ground","Any"};
 // Shader Globals
-int shader[] = {0,0,0,0,0};  //  Shaders
+int shader[] = {0,0,0,0,0,0};  //  Shaders
 // light globals
 int move_light = 1;      // if the light will be moving
 int zh=0;                //  Light angle
@@ -42,7 +42,7 @@ int src=0;        //  Offset of first fly in source
 int dst=0;        //  Offset of first fly in destination
 double vel=0.04;   //  Relative speed
 int ff_x = 50;
-int ff_y = 48;
+int ff_y = 47;
 int ff_z = -52;
 int box_size = 8; // fire flys stuck in a box
 
@@ -137,6 +137,66 @@ float neonsignarr[] = {-1.0,0.0,0.0 ,0.0,1.0,1.0,
                        -.270,.309,0.0 ,1.0,.455,.557, // line 11
                        -.279,.312,0.0 ,1.0,.455,.557,
                        -.169,.348,0.0 ,1.0,.455,.557, // line 12
+                         0.0,.434,0.0 ,1.0,.455,.557,
+                       -.092,.391,0.0 ,1.0,.455,.557, // line 1 - Red o #2
+                       -.088,.395,0.0 ,1.0,.455,.557,
+                       -.139,.300,0.0 ,1.0,.455,.557, // line 2
+                       -.140,.300,0.0 ,1.0,.455,.557,
+                       -.157,.211,0.0 ,1.0,.455,.557, // line 3
+                       -.163,.217,0.0 ,1.0,.455,.557,
+                       -.099,.140,0.0 ,1.0,.455,.557, // line 4
+                       -.105,.147,0.0 ,1.0,.455,.557,
+                        .009,.136,0.0 ,1.0,.455,.557, // line 5
+                         0.0,.132,0.0 ,1.0,.455,.557,
+                        .094,.213,0.0 ,1.0,.455,.557, // line 6
+                        .089,.207,0.0 ,1.0,.455,.557,
+                        .134,.314,0.0 ,1.0,.455,.557, // line 7
+                        .136,.306,0.0 ,1.0,.455,.557,
+                        .093,.398,0.0 ,1.0,.455,.557, // line 8
+                        .093,.394,0.0 ,1.0,.455,.557,
+                        .026,.424,0.0 ,1.0,.455,.557, // line 9
+                        .028,.426,0.0 ,1.0,.455,.557,
+                        .014,.346,0.0 ,1.0,.455,.557, // line 10
+                        .012,.354,0.0 ,1.0,.455,.557,
+                        .059,.309,0.0 ,1.0,.455,.557, // line 11
+                        .050,.312,0.0 ,1.0,.455,.557,
+                        .160,.348,0.0 ,1.0,.455,.557, // line 12
+                        .158,.347,0.0 ,1.0,.455,.557,
+                        .236,.395,0.0 ,1.0,.455,.557, // line 1 - red r
+                        .230,.392,0.0 ,1.0,.455,.557,
+                        .247,.457,0.0 ,1.0,.455,.557, // line 2
+                        .218,.388,0.0 ,1.0,.455,.557,
+                        .287,.325,0.0 ,1.0,.455,.557, // line 3
+                        .283,.333,0.0 ,1.0,.455,.557,
+                        .255,.223,0.0 ,1.0,.455,.557, // line 4
+                        .256,.236,0.0 ,1.0,.455,.557,
+                        .161,.166,0.0 ,1.0,.455,.557, // line 5
+                        .169,.175,0.0 ,1.0,.455,.557,
+                        .173,.119,0.0 ,1.0,.455,.557, // line 6
+                        .168,.124,0.0 ,1.0,.455,.557,
+                        .236,.124,0.0 ,1.0,.455,.557, // line 7
+                        .224,.122,0.0 ,1.0,.455,.557,
+                        .378,.246,0.0 ,1.0,.455,.557, // line 8
+                        .375,.240,0.0 ,1.0,.455,.557,
+                        .423,.354,0.0 ,1.0,.455,.557, // line 1 - red s
+                        .419,.349,0.0 ,1.0,.455,.557,
+                        .466,.387,0.0 ,1.0,.455,.557, // line 2
+                        .433,.338,0.0 ,1.0,.455,.557,
+                        .480,.256,0.0 ,1.0,.455,.557, // line 3
+                        .480,.259,0.0 ,1.0,.455,.557,
+                        .489,.159,0.0 ,1.0,.455,.557, // line 4
+                        .491,.166,0.0 ,1.0,.455,.557,
+                        .452,.110,0.0 ,1.0,.455,.557, // line 5
+                        .461,.112,0.0 ,1.0,.455,.557,
+                        .382,.122,0.0 ,1.0,.455,.557, // line 6
+                        .387,.117,0.0 ,1.0,.455,.557,
+                        .375,.178,0.0 ,1.0,.455,.557, // line 7
+                        .378,.170,0.0 ,1.0,.455,.557,
+                        .394,.216,0.0 ,1.0,.455,.557, // line 8
+                        .487,.160,0.0 ,1.0,.455,.557,
+                        .563,.192,0.0 ,1.0,.455,.557, // line 9
+                        .553,.190,0.0 ,1.0,.455,.557,
+                        .601,.162,0.0 ,1.0,.455,.557, // line 10
                        };
 
 void neon_sign(float x, float y, float z, float s){
@@ -154,7 +214,7 @@ void neon_sign(float x, float y, float z, float s){
    glVertexPointer(3,GL_FLOAT,24,&neonsignarr[0]);
    glColorPointer(3,GL_FLOAT,24,&neonsignarr[3]);
    //  Draw all lines
-   glDrawArrays(GL_LINES,0,76);
+   glDrawArrays(GL_LINES,0,136);
    //  Disable vertex arrays
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_COLOR_ARRAY);
@@ -242,9 +302,7 @@ void water_normmap_quad(float x, float y, float z, float dx, float dy, float dz,
    // transformations
    glTranslated(x,y,z);
    glRotated(rx,1,0,0);
-   //glRotated(ry,0,1,0);
-   // glRotated(rz,0,0,1);
-   // glScaled(dx,dy,1);
+   glRotated(ry,0,1,0);
    // get current model view matrix
    float modelview_matrix[16]; 
    glGetFloatv(GL_MODELVIEW_MATRIX, modelview_matrix); 
@@ -307,6 +365,66 @@ void normmap_quad(float x, float y, float z, float dx, float dy, float dz, float
    float normal_matrix[9];
    mat4normalMatrix(modelview_matrix, normal_matrix);
    id = glGetUniformLocation(shader[1],"NormalMatrix");
+   glUniformMatrix3fv(id,1,0,normal_matrix);
+   // Wall
+   glBegin(GL_QUADS);
+   glTexCoord2f(0,0); glVertex3f(-1,-1, 0);
+   glTexCoord2f(1,0); glVertex3f(+1,-1, 0);
+   glTexCoord2f(1,1); glVertex3f(+1,+1, 0);
+   glTexCoord2f(0,1); glVertex3f(-1,+1, 0);
+   glEnd();
+   glPopMatrix();
+   // unbind textures
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glActiveTexture(GL_TEXTURE1);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   //  Revert to fixed pipeline
+   glUseProgram(0);
+}
+
+void neonsign_normmap_quad(float x, float y, float z, float dx, float dy, float dz, float rx, float ry, float rz, int image_tex, int norm_tex, float lx, float ly)
+{
+   //  Select shader
+   glUseProgram(shader[5]);
+   //  Walls material and color
+   float color[][4] = {{0,0,0,0},{.5,.5,.5,0},{1,1,0,0},{0,1,0,0},{0,1,1,0},{0,0,1,0},{1,0,1,0},{1,1,1,1}};
+   glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,32.0);
+   glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,color[7]);
+   glMaterialfv(GL_FRONT_AND_BACK,GL_EMISSION,color[0]);
+   glColor4fv(color[1]);
+   glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT,color[1]);
+   glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,color[1]);
+   // set texture uniforms
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, image_tex);
+   int id = glGetUniformLocation(shader[5],"tex");
+   glUniform1i(id,0);
+   glActiveTexture(GL_TEXTURE1);
+   glBindTexture(GL_TEXTURE_2D, norm_tex);
+   id = glGetUniformLocation(shader[5],"norms");
+   glUniform1i(id,1);
+   // neon uniforms
+   id = glGetUniformLocation(shader[5],"neon_light_tp");
+   glUniform2f(id,lx,ly);
+   id = glGetUniformLocation(shader[5],"neon_light_color");
+   glUniform3f(id,1.0,.1,.4);
+   id = glGetUniformLocation(shader[5],"r");
+   glUniform1f(id,1.6);
+   // cube front face
+   // save transformation
+   glPushMatrix();
+   // transformations
+   glTranslated(x,y,z);
+   glRotated(ry,0,1,0);
+   glScaled(dx,dy,1);
+   // get current model view matrix
+   float modelview_matrix[16]; 
+   glGetFloatv(GL_MODELVIEW_MATRIX, modelview_matrix); 
+   // get Normal matrix
+   float normal_matrix[9];
+   mat4normalMatrix(modelview_matrix, normal_matrix);
+   id = glGetUniformLocation(shader[5],"NormalMatrix");
    glUniformMatrix3fv(id,1,0,normal_matrix);
    // Wall
    glBegin(GL_QUADS);
@@ -663,9 +781,16 @@ void Bar()
    // behind bar wall
    for(int i=0;i<3;i++){
       for(int j=0;j<12;j++){
-         normmap_quad(4*j-22,4*i+1,-16,2,2,1,0,0,0,tex[0],tex[1]);
+         if( (i != 2 || j != 5)&&(i != 2 || j != 6)&&(i != 1 || j != 5)&&(i != 1 || j != 6) ){ // sign wall - minus 4 quads
+            normmap_quad(4*j-22,4*i+1,-16,2,2,1,0,0,0,tex[0],tex[1]);
+         }
       }
    }
+   // sign quads
+   neonsign_normmap_quad(-2,9,-16,2,2,1,0,0,0,tex[0],tex[1],1.0,0.3);
+   neonsign_normmap_quad(2,9,-16,2,2,1,0,0,0,tex[0],tex[1],0.0,0.3);
+   neonsign_normmap_quad(-2,5,-16,2,2,1,0,0,0,tex[0],tex[1],1.0,1.3);
+   neonsign_normmap_quad(2,5,-16,2,2,1,0,0,0,tex[0],tex[1],0.0,1.3);
    // left wall
    for(int i=0;i<3;i++){
       for(int j=0;j<8;j++){
@@ -730,7 +855,7 @@ void Bar()
    table(21,0,4);
    record_player(-18,5,-8);
    // neon sign
-   neon_sign(0,7,-15,2.0);
+   neon_sign(.4,7.8,-15.85,2.0);
 }
 
 //  Fly
@@ -752,9 +877,9 @@ void Move(int k)
    int k1 = k+dst;
    float dt = 1e-3;
    // random acceleration
-   float ax = (rand()%1000)/10000.0 - .05;
-   float ay = (rand()%1000)/10000.0 - .05;
-   float az = (rand()%1000)/10000.0 - .05;
+   float ax = ((rand()%1000)-500)/500.0;
+   float ay = ((rand()%1000)-500)/500.0;
+   float az = ((rand()%1000)-500)/500.0;
    //  Update velocity
    // flip vel if fly is close to box edge
    if(flys[k0].x > ff_x+box_size || flys[k0].x < ff_x-box_size){
@@ -765,6 +890,16 @@ void Move(int k)
    }
    if(flys[k0].z > ff_z+box_size || flys[k0].z < ff_z-box_size){
       flys[k0].w *= -1;
+   }
+   // speed limit
+   if(abs(flys[k0].u) > 13.0){
+      flys[k0].u /= 2.0;
+   }
+   if(abs(flys[k0].v) > 13.0){
+      flys[k0].v /= 2.0;
+   }
+   if(abs(flys[k0].w) > 13.0){
+      flys[k0].w /= 2.0;
    }
    flys[k1].u = flys[k0].u + ax;
    flys[k1].v = flys[k0].v + ay;
@@ -789,9 +924,20 @@ void Step()
 }
 
 //
-//  Scaled random value
+//  random value for the location of the flies
 //
-void rand3(float Sx,float Sy,float Sz,float* X,float* Y,float* Z)
+void rand_loc(float* X,float* Y,float* Z)
+{
+   *X = (rand()%(20*box_size) - 10*box_size)/10.5 + ff_x;
+   *Y = (rand()%(20*box_size) - 10*box_size)/10.5 + ff_y;
+   *Z = (rand()%(20*box_size) - 10*box_size)/10.5 + ff_z;
+}
+
+
+//
+//  Scaled random value for the velocity of the flies
+//
+void rand_vel(float Sx,float Sy,float Sz,float* X,float* Y,float* Z)
 {
    float x = 0;
    float y = 0;
@@ -804,9 +950,9 @@ void rand3(float Sx,float Sy,float Sz,float* X,float* Y,float* Z)
       z = rand()/(0.5*RAND_MAX)-1;
       d = x*x+y*y+z*z;
    }
-   *X = Sx*x + ff_x;
-   *Y = Sy*y + ff_y;
-   *Z = Sz*z + ff_z;
+   *X = Sx*x;
+   *Y = Sy*y;
+   *Z = Sz*z;
 }
 
 //
@@ -823,8 +969,8 @@ void InitLoc()
    //  Assign random locations
    for (k=0;k<N;k++)
    {
-      rand3(dim/2,dim/2,dim/3,&flys[k].x,&flys[k].y,&flys[k].z);
-      rand3(vel,vel,vel,&flys[k].u,&flys[k].v,&flys[k].w);
+      rand_loc(&flys[k].x,&flys[k].y,&flys[k].z);
+      rand_vel(vel,vel,vel,&flys[k].u,&flys[k].v,&flys[k].w);
       switch (k%2)
       {
          case 0:
@@ -1155,6 +1301,7 @@ int main(int argc,char* argv[])
    shader[2] = CreateShaderProgGeom("firefly.vert","firefly.geom","firefly.frag");
    shader[3] = CreateShaderProg("terrain.vert","terrain.frag");
    shader[4] = CreateShaderProgGeom("neonsign.vert","neonsign.geom","neonsign.frag");
+   shader[5] = CreateShaderProg("neon_normmap.vert","neon_normmap.frag");
    //  Load textures
    tex[0] = LoadTexBMP("brickwall.bmp");
    tex[1] = LoadTexBMP("brickwallnormal.bmp");
