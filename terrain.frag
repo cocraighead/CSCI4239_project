@@ -53,5 +53,5 @@ void main()
    Normal = 2*Normal - 1;
    vec3 N = normalize(Normal);
 
-   gl_FragColor = phong() * mix(texture2D(tex,gl_TexCoord[0].xy), texture2D(alt_tex,gl_TexCoord[0].xy), (dot(N,vec3(0,1,0))+1)/2.0 );
+   gl_FragColor = phong() * mix(texture2D(tex,gl_TexCoord[0].xy), texture2D(alt_tex,gl_TexCoord[0].xy), dot(N,vec3(0,1,0)) );
 }

@@ -4,12 +4,13 @@
  *
  *  Key bindings:
  *  arrows     Change view angle
- *  space bar   Change view height
+ *  space bar  Change view height
  *  m          Toggle scene
- *  0          Set th and ph to 0 - overhead view angle
+ *  0          Reset View angle
  *  l          Turn light movement on/off
  *  [ and ]    Change light position
  *  { and }    Change light height
+ *  b/B        Toggle Fire fly blink
  *  wasdrf     Move an object wtih gex/gey/gez  
  *  ESC        Exit
  */
@@ -35,13 +36,15 @@ float l_ambient =0.3;    // Light properties
 float l_diffuse = 0.5;
 float l_specular = 0.8;
 // Texture gloabls
-int tex[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};     //  Textures
+int tex[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};     //  Textures
 // Firefly globals
 int n;
 int N_fly=128;       //  Number of bodies
 int src=0;        //  Offset of first fly in source
 int dst=0;        //  Offset of first fly in destination
 double vel_craig=0.04;   //  Relative speed
+float g_time = 0; // time for blinking
+int ff_blink = 1;
 int ff_x = 50;
 int ff_y = 47;
 int ff_z = -52;
@@ -90,6 +93,18 @@ float* vel = Vel;
 float* start = Start;
 float* duration = Dur;
 float* vel_init = Vel_init;
+// global edit
+int gex =0;
+int gey =0;
+int gez =0;
+// move camera
+float PX = 0;  // Player x location
+float PZ = 0;  // Player z location
+float PY = 0;
+float PLX = 0; // Players looking at x location
+float PLZ = -1; // Players looking at z location
+float PLY = 0;
+int pheta = 0; // Angle the player is turned at
 
 // First phase of firework particle shooting up
 void firework_init(int i, float r1, float r2, float g1, float g2, float b1, float b2) {
@@ -264,23 +279,17 @@ void DrawPart(void)
     glEnableVertexAttribArray(DUR_ARRAY);
     glEnableVertexAttribArray(INIT_VEL_ARRAY);
     //  Set transparent large particles
-    if (mode)
-    {
-        glEnable(GL_POINT_SPRITE);
-        glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-        glDepthMask(0);
-    }
+    glEnable(GL_POINT_SPRITE);
+    glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glDepthMask(0);
     //  Draw arrays
     glDrawArrays(GL_POINTS, 0, n * n);
     //  Reset
-    if (mode)
-    {
-        glDisable(GL_POINT_SPRITE);
-        glDisable(GL_BLEND);
-        glDepthMask(1);
-    }
+    glDisable(GL_POINT_SPRITE);
+    glDisable(GL_BLEND);
+    glDepthMask(1);
     //  Disable arrays
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
@@ -289,22 +298,6 @@ void DrawPart(void)
     glDisableVertexAttribArray(DUR_ARRAY);
     glDisableVertexAttribArray(INIT_VEL_ARRAY);
 }
-
-
-
-// global edit
-int gex =0;
-int gey =0;
-int gez =0;
-
-// move camera
-float PX = 0;  // Player x location
-float PZ = 0;  // Player z location
-float PY = 0;
-float PLX = 0; // Players looking at x location
-float PLZ = -1; // Players looking at z location
-float PLY = 0;
-int pheta = 0; // Angle the player is turned at
 
 // lines that make up neon sign
 float neonsignarr[] = {-1.0,0.0,0.0 ,0.0,1.0,1.0,
@@ -1110,6 +1103,8 @@ typedef struct
    float x,y,z;  //  Position
    float u,v,w;  //  Velocity
    float r,g,b;  //  Color
+   float start;  // blink start time
+   float length; // blink lenght
 }  Fly;
 // Fly array
 Fly* flys=NULL;
@@ -1154,24 +1149,52 @@ void Move(int k)
    flys[k1].x = flys[k0].x + dt*flys[k1].u;
    flys[k1].y = flys[k0].y + dt*flys[k1].v;
    flys[k1].z = flys[k0].z + dt*flys[k1].w;
+   // update color - blink
+   if(ff_blink){
+      if(flys[k0].start <= g_time && g_time < (flys[k0].start+flys[k0].length)){
+         flys[k1].r = 1.0;
+         flys[k1].g = 0.9;
+         flys[k1].b = 0.5;
+      }else if( (flys[k0].start-1)  <= g_time && g_time < flys[k0].start){
+         float mix_alpha = (flys[k0].start - g_time)/1.0;
+         flys[k1].r = 1.0*(1-mix_alpha) + 0*mix_alpha;
+         flys[k1].g = 0.9*(1-mix_alpha) + 0*mix_alpha;
+         flys[k1].b = 0.5*(1-mix_alpha) + 0*mix_alpha;
+      }else if( (flys[k0].start+flys[k0].length) <= g_time && g_time < (flys[k0].start+flys[k0].length+1) ){
+         float mix_alpha = (g_time - (flys[k0].start+flys[k0].length))/1.0;
+         flys[k1].r = 1.0*(1-mix_alpha) + 0*mix_alpha;
+         flys[k1].g = 0.9*(1-mix_alpha) + 0*mix_alpha;
+         flys[k1].b = 0.5*(1-mix_alpha) + 0*mix_alpha;
+      }else{
+         flys[k1].r = 0.0;
+         flys[k1].g = 0.0;
+         flys[k1].b = 0.0;
+      }
+   }else{
+      flys[k1].r = 1.0;
+      flys[k1].g = 0.9;
+      flys[k1].b = 0.5;
+   }
+   
 }
 
-//
 //  Advance time one time step
-//
 void Step()
 {
    int k;
    //  Switch source and destination
    src = src?0:N_fly;
    dst = dst?0:N_fly;
+   // update time for blink
+   g_time += .01;
+   if(g_time > 30){
+      g_time -= 30;
+   }
    for (k=0;k<N_fly;k++)
       Move(k);
 }
 
-//
 //  random value for the location of the flies
-//
 void rand_loc(float* X,float* Y,float* Z)
 {
    *X = (rand()%(20*box_size) - 10*box_size)/10.5 + ff_x;
@@ -1179,10 +1202,7 @@ void rand_loc(float* X,float* Y,float* Z)
    *Z = (rand()%(20*box_size) - 10*box_size)/10.5 + ff_z;
 }
 
-
-//
 //  Scaled random value for the velocity of the flies
-//
 void rand_vel(float Sx,float Sy,float Sz,float* X,float* Y,float* Z)
 {
    float x = 0;
@@ -1201,9 +1221,14 @@ void rand_vel(float Sx,float Sy,float Sz,float* X,float* Y,float* Z)
    *Z = Sz*z;
 }
 
-//
+//  random value for the blink of the flies
+void rand_blink(float* Length,float* Start)
+{
+   *Length = (rand() % 3) + 1;
+   *Start = (rand() % 20) + 4;
+}
+
 //  Initialize fireflys
-//
 void InitLoc()
 {
    int k;
@@ -1217,6 +1242,7 @@ void InitLoc()
    {
       rand_loc(&flys[k].x,&flys[k].y,&flys[k].z);
       rand_vel(vel_craig,vel_craig,vel_craig,&flys[k].u,&flys[k].v,&flys[k].w);
+      rand_blink(&flys[k].length,&flys[k].start);
       switch (k%2)
       {
          case 0:
@@ -1225,14 +1251,20 @@ void InitLoc()
            flys[k].b = 0;
            break;
          case 1:
-           flys[k].r = 1.0;
-           flys[k].g = 0.9;
-           flys[k].b = 0.5;
+         //   flys[k].r = 1.0;
+         //   flys[k].g = 0.9;
+         //   flys[k].b = 0.5;
+           flys[k].r = 0;
+           flys[k].g = 0;
+           flys[k].b = 0;
            break;
       }
       flys[k+N_fly].r = flys[k].r;
       flys[k+N_fly].g = flys[k].g;
       flys[k+N_fly].b = flys[k].b;
+      // both src and dst have data
+      flys[k+N_fly].length = flys[k].length;
+      flys[k+N_fly].start = flys[k].start;
    }
 }
 
@@ -1250,7 +1282,7 @@ void terrain()
    glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,color[1]);
    // set texture uniforms
    glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, tex[4]);
+   glBindTexture(GL_TEXTURE_2D, tex[11]);
    int id = glGetUniformLocation(shader[3],"tex");
    glUniform1i(id,0);
    glActiveTexture(GL_TEXTURE1);
@@ -1262,7 +1294,7 @@ void terrain()
    id = glGetUniformLocation(shader[3],"heights");
    glUniform1i(id,2);
    glActiveTexture(GL_TEXTURE3);
-   glBindTexture(GL_TEXTURE_2D, tex[11]);
+   glBindTexture(GL_TEXTURE_2D, tex[17]);
    id = glGetUniformLocation(shader[3],"alt_tex");
    glUniform1i(id,3);
    // save transformation
@@ -1440,7 +1472,7 @@ void display(GLFWwindow* window)
    glColor3f(1,1,1);
    glWindowPos2i(5,5);
    Print("FPS=%d Angle=%d,%d zh=%d l_rad=%d l_ele=%.1f %s | gex=%d, gey=%d, gez=%d",
-      FramesPerSecond(),th,ph,zh,light_radius,light_elv,text[mode],gex,gey,gez);
+      FramesPerSecond(),th,ph,zh,light_radius,light_elv,text[mode],gex,gey,gez,g_time);
    
    ErrCheck("display");
    glFlush();
@@ -1462,8 +1494,16 @@ void key(GLFWwindow* window,int key,int scancode,int action,int mods)
    if (key == GLFW_KEY_ESCAPE)
       glfwSetWindowShouldClose(window,1);
    //  Reset view angle
-   else if (key == GLFW_KEY_0)
+   else if (key == GLFW_KEY_0){
       th = ph = 0;
+      PX = 0;  // Player x location
+      PZ = 0;  // Player z location
+      PY = 0;
+      PLX = 0; // Players looking at x location
+      PLZ = -1; // Players looking at z location
+      PLY = 0;
+      pheta = 0; // Angle the player is turned at
+   }
    //  Switch shaders
    else if (key==GLFW_KEY_M)
       mode = shift ? (mode+MODE-1)%MODE : (mode+1)%MODE;
@@ -1480,6 +1520,9 @@ void key(GLFWwindow* window,int key,int scancode,int action,int mods)
       light_elv += 0.2;
    else if (key == GLFW_KEY_RIGHT_BRACKET && shift)
       light_elv -= 0.2;
+   //  Move light - height
+   else if (key == GLFW_KEY_B)
+      ff_blink = 1-ff_blink;
    //  Right arrow key - increase angle by 5 degrees
    else if (key == GLFW_KEY_RIGHT)
       th += 5;
@@ -1589,6 +1632,7 @@ int main(int argc,char* argv[])
    tex[14] = LoadTexBMP("nightskybox2.bmp");
    tex[15] = LoadTexBMP("starwater.bmp");
    tex[16] = LoadTexBMP("waternormal.bmp");
+   tex[17] = LoadTexBMP("stone.bmp");
 
    //  Initialize flys
    InitLoc();
