@@ -5,10 +5,12 @@
 varying vec3 View;
 varying vec3 Light;
 varying vec4 Ambient;
+varying vec4 world_coord;
 uniform mat3 NormalMatrix;
 uniform sampler2D tex;
 uniform sampler2D alt_tex;
 uniform sampler2D norms;
+uniform float lake_height;
 
 vec4 phong()
 {  
@@ -52,6 +54,10 @@ void main()
    // shift it from [0,1] to [-1,1]
    Normal = 2*Normal - 1;
    vec3 N = normalize(Normal);
+
+   if(world_coord.y <= lake_height){
+      discard;
+   }
 
    gl_FragColor = phong() * mix(texture2D(tex,gl_TexCoord[0].xy), texture2D(alt_tex,gl_TexCoord[0].xy), dot(N,vec3(0,1,0)) );
 }

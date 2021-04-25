@@ -4,6 +4,8 @@
 varying vec3 View;
 varying vec3 Light;
 varying vec4 Ambient;
+varying vec4 world_coord;
+uniform mat4 ModelMatrix;
 
 uniform sampler2D heights;
 
@@ -27,7 +29,8 @@ void main()
    Ambient = gl_FrontMaterial.emission + gl_FrontLightProduct[0].ambient + gl_LightModel.ambient*gl_FrontMaterial.ambient;
 
    
-
+   // world coordinate
+   world_coord = ModelMatrix * risen_vertex;
    //  Set vertex position
    gl_Position = gl_ModelViewProjectionMatrix * risen_vertex;
 }

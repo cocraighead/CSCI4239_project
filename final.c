@@ -26,7 +26,7 @@ float dim = 32;      //  World dimension
 int mode = 0;
 const char* text[] = {"Bar","Camp Ground","Any"};
 // Shader Globals
-int shader[] = {0,0,0,0,0,0,0};  //  Shaders
+int shader[] = {0,0,0,0,0,0,0,0};  //  Shaders
 // light globals
 int move_light = 1;      // if the light will be moving
 int zh=0;                //  Light angle
@@ -67,9 +67,7 @@ float Start[N * N];
 float Dur[N * N];
 float Vel_init[N * N];
 int flag = 0;
-//
 //  Random numbers with range and offset
-//
 static float frand(float rng, float off)
 {
     return rand() * rng / RAND_MAX + off;
@@ -93,6 +91,7 @@ float* vel = Vel;
 float* start = Start;
 float* duration = Dur;
 float* vel_init = Vel_init;
+
 // global edit
 int gex =0;
 int gey =0;
@@ -105,6 +104,12 @@ float PLX = 0; // Players looking at x location
 float PLZ = -1; // Players looking at z location
 float PLY = 0;
 int pheta = 0; // Angle the player is turned at
+
+// Buffer globals
+unsigned int depthbuf[2];  //  Depth buffer
+unsigned int img[2];      //  Image textures
+unsigned int framebuf[2]; //  Frame buffers
+float lake_height = -2;
 
 // First phase of firework particle shooting up
 void firework_init(int i, float r1, float r2, float g1, float g2, float b1, float b2) {
@@ -512,6 +517,17 @@ void sky(float D, int sidetex, int topbottex)
    glActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D, 0);
 
+}
+
+void lake(float x, float y, float z, float dx, float dy, float dz){
+   glColor3f(0.0,1.0,0.0);
+   glBegin(GL_QUADS);
+   glVertex3f(-1*dx+x,y,-1*dz+z);
+   glVertex3f(+1*dx+x,y,-1*dz+z);
+   glVertex3f(+1*dx+x,y,+1*dz+z);
+   glVertex3f(-1*dx+x,y,+1*dz+z);
+   glEnd();
+   glColor3f(1.0,1.0,1.0);
 }
 
 void water_normmap_quad(float x, float y, float z, float dx, float dy, float dz, float rx, float ry, float rz, int image_tex, int norm_tex)
@@ -1092,9 +1108,10 @@ void Bar()
    chair(-3,0,-5,0);
    // record player 
    table(21,0,4);
-   record_player(-18,5,-8);
    // neon sign
    neon_sign(.4,7.8,-15.85,2.0);
+   // record player on counter
+   record_player(-18,5,-8);
 }
 
 //  Fly
@@ -1297,6 +1314,9 @@ void terrain()
    glBindTexture(GL_TEXTURE_2D, tex[17]);
    id = glGetUniformLocation(shader[3],"alt_tex");
    glUniform1i(id,3);
+   // height of lake - discard pixels below lake
+   id = glGetUniformLocation(shader[3],"lake_height");
+   glUniform1f(id,lake_height+21);
    // save transformation
    glPushMatrix();
    // transformations
@@ -1305,6 +1325,14 @@ void terrain()
    glRotated(0,0,1,0);
    glRotated(0,0,0,1);
    glScaled(12,24,10);
+   // get model matrix
+   float model_matrix[16]; 
+   mat4identity(model_matrix);
+   mat4scale(model_matrix,12,24,10);
+   mat4rotate(model_matrix,-90,1,0,0);
+   mat4translate(model_matrix,0,-10,0);
+   id = glGetUniformLocation(shader[3],"ModelMatrix");
+   glUniformMatrix4fv(id,1,0,model_matrix);
    // get current model view matrix
    float modelview_matrix[16]; 
    glGetFloatv(GL_MODELVIEW_MATRIX, modelview_matrix); 
@@ -1407,7 +1435,7 @@ void fireworkShader() {
 
 }
 
-void Campground()
+void Campground(int mode)
 {
    // campsite platform
    Cube(50,37,-39, 14,1,1, 0,0, tex[12]);
@@ -1418,7 +1446,12 @@ void Campground()
    // Table
    picktable(55,38,-57);
    // lake
-   water_normmap_quad(11,-2,90, 50,50,1, -90,0,0, tex[16],tex[16]);
+   // water_normmap_quad(11,lake_height,90, 50,50,1, -90,0,0, tex[16],tex[16]);
+   if(mode == 0){
+      glDisable(GL_LIGHTING);
+      lake(1,lake_height,89, 60,1,54);
+      glEnable(GL_LIGHTING);
+   }
    // terrain
    terrain();
 
@@ -1436,6 +1469,7 @@ void anyitem()
 //
 void display(GLFWwindow* window)
 {
+   if(mode == 1) glBindFramebuffer(GL_FRAMEBUFFER,framebuf[0]);
    //  Erase the window and the depth buffer
    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
    //  Enable Z-buffering in OpenGL
@@ -1451,23 +1485,68 @@ void display(GLFWwindow* window)
    if(mode == 0){
       Bar();
    }else if(mode == 1){
-      Campground();
+      Campground(0);
+      glDisable(GL_LIGHTING);
+      sky(268,tex[13],tex[14]);
+      fireflies();
+      fireworkShader();
+      // second frame buff to catch filped scene
+      glBindFramebuffer(GL_FRAMEBUFFER,framebuf[1]);
+      //  Erase the window and the depth buffer
+      glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+      //  Enable Z-buffering in OpenGL
+      glEnable(GL_DEPTH_TEST);
+      // set up view and proj
+      Projection(fov,asp,dim);
+      // flip the camera over the lake
+      gluLookAt(PX,lake_height-(PY-lake_height),PZ , PLX,lake_height-(PY-lake_height),PLZ , 0,-1,0);
+      //  Enable lighting
+      Lighting(light_radius*Cos(zh),light_elv,light_radius*Sin(zh) ,l_ambient,l_diffuse,l_specular);
+      Campground(1);
+      glDisable(GL_LIGHTING);
+      sky(268,tex[13],tex[14]);
+      // back to basic
+      glBindFramebuffer(GL_FRAMEBUFFER,0);
+      glDisable(GL_DEPTH_TEST);
+      //  Clear the screen
+      glClear(GL_COLOR_BUFFER_BIT);
+      //  Enable shader
+      glUseProgram(shader[7]);
+      //  Set screen resolution uniforms
+      int id,width,height;
+      glfwGetWindowSize(window,&width,&height);
+      id = glGetUniformLocation(shader[7],"dX");
+      glUniform1f(id,1.0/width);
+      id = glGetUniformLocation(shader[7],"dY");
+      glUniform1f(id,1.0/height);
+      // set texture uniform
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, img[0]);
+      id = glGetUniformLocation(shader[7],"tex_frame0");
+      glUniform1i(id,0);
+      glActiveTexture(GL_TEXTURE1);
+      glBindTexture(GL_TEXTURE_2D, img[1]);
+      id = glGetUniformLocation(shader[7],"tex_frame1");
+      glUniform1i(id,1);
+      //  Identity projection
+      glMatrixMode(GL_PROJECTION);
+      glLoadIdentity();
+      glMatrixMode(GL_MODELVIEW);
+      glLoadIdentity();
+      // draw frame on quad
+      glBegin(GL_QUADS);
+      glTexCoord2f(0,0); glVertex2f(-1,-1);
+      glTexCoord2f(0,1); glVertex2f(-1,+1);
+      glTexCoord2f(1,1); glVertex2f(1,+1);
+      glTexCoord2f(1,0); glVertex2f(1,-1);
+      glEnd();
+      //  Disable shader
+      glUseProgram(0);
    }else{
       anyitem();
    }
 
    glDisable(GL_LIGHTING);
-   if(mode == 1){
-      sky(268,tex[13],tex[14]);
-   }
-   // firefly particles
-   if(mode == 1){
-      fireflies();
-      fireworkShader();
-   }
-
-
-
    //  Display parameters
    glColor3f(1,1,1);
    glWindowPos2i(5,5);
@@ -1594,8 +1673,42 @@ void reshape(GLFWwindow* window,int width,int height)
    asp = (height>0) ? width/(double)height : 1;
    //  Set the viewport to the entire window
    glViewport(0,0, width,height);
+   //
+   //  Allocate a frame buffer
+   //  Typically the same size as the screen (W,H) but can be larger or smaller
+   //
+   //  Delete old frame buffer, depth buffer and texture
+   if(depthbuf[0]){
+      glDeleteRenderbuffers(2,depthbuf);
+      glDeleteTextures(2,img);
+      glDeleteFramebuffers(2,framebuf);
+   }
+   //  Allocate two textures, two frame buffer objects and a depth buffer
+   glGenFramebuffers(2,framebuf);   
+   glGenTextures(2,img);
+   glGenRenderbuffers(2,depthbuf);   
+   //  Allocate and size texture
+   for (int k=0;k<2;k++)
+   {
+      glBindTexture(GL_TEXTURE_2D,img[k]);
+      glTexImage2D(GL_TEXTURE_2D,0,3,width,height,0,GL_RGB,GL_UNSIGNED_BYTE,NULL);
+      glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+      //  Bind frame buffer to texture
+      glBindFramebuffer(GL_FRAMEBUFFER,framebuf[k]);
+      glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,img[k],0);
+      //  Bind depth buffer to frame buffer 0
+      glBindRenderbuffer(GL_RENDERBUFFER,depthbuf[k]);
+      glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH_COMPONENT24,width,height);
+      glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_RENDERBUFFER,depthbuf[k]);
+   }
+   //  Switch back to regular display buffer
+   glBindFramebuffer(GL_FRAMEBUFFER,0);
+   ErrCheck("Framebuffer");
    //  Update projection
-   Projection(fov,asp,dim);
+   //Projection(fov,asp,dim);
 }
 
 //
@@ -1614,6 +1727,7 @@ int main(int argc,char* argv[])
    shader[4] = CreateShaderProgGeom("neonsign.vert","neonsign.geom","neonsign.frag");
    shader[5] = CreateShaderProg("neon_normmap.vert","neon_normmap.frag");
    shader[6] = CreateShaderProgAttr("firework.vert", NULL, Name);
+   shader[7] = CreateShaderProg(NULL,"reflect_lake.frag");
    //  Load textures
    tex[0] = LoadTexBMP("brickwall.bmp");
    tex[1] = LoadTexBMP("brickwallnormal.bmp");
