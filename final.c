@@ -26,7 +26,7 @@ float dim = 32;      //  World dimension
 int mode = 0;
 const char* text[] = {"Bar","Camp Ground","Any"};
 // Shader Globals
-int shader[] = {0,0,0,0,0,0,0,0};  //  Shaders
+int shader[] = {0,0,0,0,0,0,0,0,0};  //  Shaders
 // light globals
 int move_light = 1;      // if the light will be moving
 int zh=0;                //  Light angle
@@ -36,7 +36,7 @@ float l_ambient =0.3;    // Light properties
 float l_diffuse = 0.5;
 float l_specular = 0.8;
 // Texture gloabls
-int tex[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};     //  Textures
+int tex[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};     //  Textures
 // Firefly globals
 int n;
 int N_fly=128;       //  Number of bodies
@@ -91,6 +91,50 @@ float* vel = Vel;
 float* start = Start;
 float* duration = Dur;
 float* vel_init = Vel_init;
+
+// SODA GLOBALS
+//  Set up attribute array indexes for program
+#define VELOCITY_ARRAY_s   4
+#define START_ARRAY_s 5
+#define DUR_ARRAY_s 6
+#define INIT_VEL_ARRAY_s 7
+
+static char* Name_s[] = { "","","","","Vel","Start","Dur","Vel_init",NULL };
+//  Point arrays
+#define N_s 150
+float Vert_s[3 * N_s * N_s * 2];
+float Color_s[3 * N_s * N_s * 2];
+float Vel_s[3 * N_s * N_s * 2];
+float Start_s[N_s * N_s * 2];
+float Dur_s[N_s * N_s * 2];
+float Vel_init_s[N_s * N_s * 2];
+
+// Velocities of particle
+float xVel_s[10], yVel_s[10], zVel_s[10];
+
+// Different firework y velocities
+float fire1_yVel_s = 10.0;
+
+float timeApog_s; // Time at which the initial particle reaches apogee and explodes
+
+int explodeFlag_s = 1;
+int partCounter_s = 0;
+
+float x0_s[2] = { 0,5 };
+float y0_sos_s[2] = {5.6,0 };
+float z0_s[2] = { 0,5 };
+float startTime_s[2] = { 0,2 };
+float yVel_0_s[2] = { 0,12 };
+
+//  Array Pointers
+float* vert_s = Vert_s;
+float* color_s = Color_s;
+float* vel_s = Vel_s;
+float* start_s = Start_s;
+float* duration_s = Dur_s;
+float* vel_init_s = Vel_init_s;
+float radius_s = 0.08;
+
 
 // global edit
 int gex =0;
@@ -302,6 +346,153 @@ void DrawPart(void)
     glDisableVertexAttribArray(START_ARRAY);
     glDisableVertexAttribArray(DUR_ARRAY);
     glDisableVertexAttribArray(INIT_VEL_ARRAY);
+}
+
+void soda_disp(int i, float r1, float r2, float g1, float g2, float b1, float b2, int j, int k) {
+    //  Location x,y,z
+    *vert_s++ = Cos(k / 25.0 * 360.0) * radius_s-9;
+    *vert_s++ = y0_sos_s[0];
+    *vert_s++ = Sin(k / 25.0 * 360.0) * radius_s-8;
+    //printf("%.2f",Sin(k/25.0*360.0)*radius;);
+    //  Color r,g,b (0.5-1.0)
+    *color_s++ = frand(r1, r2);
+    *color_s++ = frand(g1, g2);
+    *color_s++ = frand(b1, b2);
+
+    // Kinematics for tracking start of explosion 
+    xVel_s[i] = 1.0 * frand(0.2, 0);
+    yVel_s[i] = yVel_0_s[i];
+    zVel_s[i] = 1.0 * frand(0.2, 0);
+
+    //  Velocity
+    *vel_s++ = xVel_s[i];
+    *vel_s++ = yVel_s[i];
+    *vel_s++ = zVel_s[i];
+
+    //  Launch time
+    startTime_s[i] = frand(2, 0);
+    *start_s++ = startTime_s[i];
+    // Duration
+    *duration_s++ = 0.0;
+    // Initial particle velocity
+    *vel_init_s++ = yVel_s[i];
+    // The time at which the initial particle will reach apogee
+    timeApog_s = sqrt((y0_sos_s[i] - 4.5) / (0.5 * 9.81));
+}
+
+void soda_splash(int i, float r1, float r2, float g1, float g2, float b1, float b2, float vx, float vy, float vz, float dur) {
+    timeApog_s = sqrt((y0_sos_s[i]-4.5) / (0.5 * 9.81));
+    *vert_s++ = x0_s[i] + xVel_s[i] * timeApog_s-9;
+    *vert_s++ = y0_sos_s[i] + yVel_s[i] * timeApog_s - 0.5 * 9.8 * timeApog_s * timeApog_s;
+    *vert_s++ = z0_s[i] + zVel_s[i] * timeApog_s-8;
+    //  Color r,g,b (0.5-1.0)
+    *color_s++ = frand(r1, r2);
+    *color_s++ = frand(g1, g2);
+    *color_s++ = frand(b1, b2);
+    // Duration
+    *duration_s++ = dur;
+    // Initial particle velocity
+    *vel_init_s++ = 0;
+
+    //  Velocity
+    float ang = (rand()) / ((RAND_MAX / 7)); // random float between 0 and 7
+    *vel_s++ = frand(vx * cos(ang), 0);
+    *vel_s++ = frand(vy, 0);
+    *vel_s++ = frand(vz * sin(ang), 0);
+    //  Launch time
+    *start_s++ = startTime_s[i] + timeApog_s + frand(0.1, 0);
+}
+
+
+//
+//  Initialize particles for soda 
+//
+void InitPart_s(void)
+{
+    float counter = 0;
+
+    //  Loop over NxN patch
+    int i, j;
+    n = N_s;
+
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++)
+        {
+            // Beginning of  firework 1 
+            if (i == 0 && j == 0) {
+                soda_disp(0, 0.05, 205.0 / 255.0, 0.05, 133.0 / 255.0, 0.05, 63.0 / 255.0, i, j);
+                soda_splash(0, 0.1, 205.0 / 255.0, 0.1, 133.0 / 255.0, 0.1, 63.0 / 255.0, 5.0, 7.0, 5.0, 0.05);
+
+                // Beginning of  firework 2
+            }
+            else if (i == 1 && j == 1) {
+                soda_disp(0, 0.05, 205.0 / 255.0, 0.05, 133.0 / 255.0, 0.05, 63.0 / 255.0, i, j);
+                soda_splash(0, 0.1, 205.0 / 255.0, 0.1, 133.0 / 255.0, 0.1, 63.0 / 255.0, 5.0, 7.0, 5.0, 0.05);
+
+
+
+            }
+            else { // Firework Explosion
+                soda_disp(0, 0.05, 205.0 / 255.0, 0.05, 133.0 / 255.0, 0.05, 63.0 / 255.0, i, j);
+                soda_splash(0, 0.2, 205.0 / 255.0, 0.2, 133.0 / 255.0, 0.2, 63.0 / 255.0, 5.0, 7.0, 5.0, 0.065);
+
+                counter += 0.01;
+                partCounter_s++;
+
+            }
+        }
+    }
+}
+
+//
+//  Draw particles for soda 
+//
+void DrawPart_s(void)
+{
+    //  Set particle size
+    glPointSize(4);
+    //  Point vertex location to local array Vert
+    glVertexPointer(3, GL_FLOAT, 0, Vert_s);
+    //  Point color array to local array Color
+    glColorPointer(3, GL_FLOAT, 0, Color_s);
+    //  Point attribute arrays to local arrays
+    glVertexAttribPointer(VELOCITY_ARRAY_s, 3, GL_FLOAT, GL_FALSE, 0, Vel_s);
+    glVertexAttribPointer(START_ARRAY_s, 1, GL_FLOAT, GL_FALSE, 0, Start_s);
+    glVertexAttribPointer(DUR_ARRAY_s, 1, GL_FLOAT, GL_FALSE, 0, Dur_s);
+    glVertexAttribPointer(INIT_VEL_ARRAY_s, 1, GL_FLOAT, GL_FALSE, 0, Vel_init_s);
+
+    //  Enable arrays used by DrawArrays
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glEnableVertexAttribArray(VELOCITY_ARRAY_s);
+    glEnableVertexAttribArray(START_ARRAY_s);
+    glEnableVertexAttribArray(DUR_ARRAY_s);
+    glEnableVertexAttribArray(INIT_VEL_ARRAY_s);
+    //  Set transparent large particles
+    if (mode)
+    {
+        glEnable(GL_POINT_SPRITE);
+        glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        glDepthMask(0);
+    }
+    //  Draw arrays
+    glDrawArrays(GL_POINTS, 0, n * n);
+    //  Reset
+    if (mode)
+    {
+        glDisable(GL_POINT_SPRITE);
+        glDisable(GL_BLEND);
+        glDepthMask(1);
+    }
+    //  Disable arrays
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableVertexAttribArray(VELOCITY_ARRAY_s);
+    glDisableVertexAttribArray(START_ARRAY_s);
+    glDisableVertexAttribArray(DUR_ARRAY_s);
+    glDisableVertexAttribArray(INIT_VEL_ARRAY_s);
 }
 
 // lines that make up neon sign
@@ -1025,6 +1216,38 @@ void chair(int x, int y, int z, int ry)
    glPopMatrix();
 }
 
+void sodaShader(int x, int y, int z) {
+    glUseProgram(shader[8]);
+    //  Set time
+    int id = glGetUniformLocation(shader[8], "time");
+    glUniform1f(id, glfwGetTime());
+    id = glGetUniformLocation(shader[8], "Noise3D");
+    glUniform1i(id, 1);
+    id = glGetUniformLocation(shader[8], "img");
+    glUniform1i(id, 0);
+    id = glGetUniformLocation(shader[8], "flag");
+    glUniform1i(id, flag);
+
+    //  Draw the particles
+    DrawPart_s();
+
+    //  No shader for what follows
+    glUseProgram(0);
+}
+
+void sodaDispenser(float x, float y, float z)
+{
+    // one table leg
+    //Cube(x + 0, y + 2.24, z + 0, .1, 2.24, .1, 0, 0, tex[5]);
+    // center base
+    Cube(x + 0, y + .07, z + 0, 1, .2, 0.6, 0, 0, tex[19]);
+    Cube(x + 0, y + 1.15, z - 0.8, 1, 1.3, 0.2, 0, 0, tex[20]);
+    Cube(x + 0, y + 2.1, z + 0, 1, .35, 0.6, 0, 0, tex[19]);
+    Cube(x + 0, y + 1.5, z + 0, 0.2, .25, 0.2, 0, 0, tex[18]);
+
+    sodaShader(x,y,z);
+}
+
 void Bar()
 {
    // floor 
@@ -1112,6 +1335,8 @@ void Bar()
    neon_sign(.4,7.8,-15.85,2.0);
    // record player on counter
    record_player(-18,5,-8);
+    // Soda Dispenser
+   sodaDispenser(-9, 4.35, -8);
 }
 
 //  Fly
@@ -1435,6 +1660,7 @@ void fireworkShader() {
 
 }
 
+
 void Campground(int mode)
 {
    // campsite platform
@@ -1728,6 +1954,8 @@ int main(int argc,char* argv[])
    shader[5] = CreateShaderProg("neon_normmap.vert","neon_normmap.frag");
    shader[6] = CreateShaderProgAttr("firework.vert", NULL, Name);
    shader[7] = CreateShaderProg(NULL,"reflect_lake.frag");
+   shader[8] = CreateShaderProgAttr("soda.vert", NULL, Name_s);
+  
    //  Load textures
    tex[0] = LoadTexBMP("brickwall.bmp");
    tex[1] = LoadTexBMP("brickwallnormal.bmp");
@@ -1747,11 +1975,16 @@ int main(int argc,char* argv[])
    tex[15] = LoadTexBMP("starwater.bmp");
    tex[16] = LoadTexBMP("waternormal.bmp");
    tex[17] = LoadTexBMP("stone.bmp");
+   tex[18] = LoadTexBMP("bottle.bmp");
+   tex[19] = LoadTexBMP("matte.bmp");
+   tex[20] = LoadTexBMP("silver.bmp");
 
    //  Initialize flys
    InitLoc();
-   //  Initialize particles
+   //  Initialize particles for fireworks 
    InitPart();
+   //  Initialize particles for soda 
+   InitPart_s();
 
    //  Event loop
    ErrCheck("init");

@@ -19,14 +19,8 @@ void main(void)
    //  Particle location
    vec4 vert = gl_Vertex;
    //  Time offset mod 5
-   float t = mod(time,25.0)-Start;
-   float timeApog = abs(Vel.y/9.8);
-
-   if(vert.y<20){
-         vert = vec4(0,-20,0,0);
-         gl_FrontColor = vec4(0,0,0,0);
-         return;
-      }   
+   float t = mod(time,5.0)-Start;
+   float timeApog = sqrt((vert.y-4.5)/(0.5*9.81));
    //  Pre-launch color black
    if (t<0.0)
       vert = vec4(0,-20,0,0);
@@ -52,8 +46,7 @@ void main(void)
       if(t>(timeApog+Dur)){
          vert = vec4(0,-20,0,0);
       }
-
- 
+      
    
    }
    //  Transform particle location
