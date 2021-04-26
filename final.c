@@ -91,6 +91,8 @@ float* vel = Vel;
 float* start = Start;
 float* duration = Dur;
 float* vel_init = Vel_init;
+// time of fireword draw
+float firework_draw_time; // COLIN ADDED !!
 
 // SODA GLOBALS
 //  Set up attribute array indexes for program
@@ -150,9 +152,9 @@ float PLY = 0;
 int pheta = 0; // Angle the player is turned at
 
 // Buffer globals
-unsigned int depthbuf[2];  //  Depth buffer
-unsigned int img[2];      //  Image textures
-unsigned int framebuf[2]; //  Frame buffers
+unsigned int depthbuf[3];  //  Depth buffer
+unsigned int img[3];      //  Image textures
+unsigned int framebuf[3]; //  Frame buffers
 float lake_height = -2;
 
 // First phase of firework particle shooting up
@@ -1485,22 +1487,9 @@ void InitLoc()
       rand_loc(&flys[k].x,&flys[k].y,&flys[k].z);
       rand_vel(vel_craig,vel_craig,vel_craig,&flys[k].u,&flys[k].v,&flys[k].w);
       rand_blink(&flys[k].length,&flys[k].start);
-      switch (k%2)
-      {
-         case 0:
-           flys[k].r = 0;
-           flys[k].g = 0;
-           flys[k].b = 0;
-           break;
-         case 1:
-         //   flys[k].r = 1.0;
-         //   flys[k].g = 0.9;
-         //   flys[k].b = 0.5;
-           flys[k].r = 0;
-           flys[k].g = 0;
-           flys[k].b = 0;
-           break;
-      }
+      flys[k].r = 0;
+      flys[k].g = 0;
+      flys[k].b = 0;
       flys[k+N_fly].r = flys[k].r;
       flys[k+N_fly].g = flys[k].g;
       flys[k+N_fly].b = flys[k].b;
@@ -1640,11 +1629,16 @@ void fireflies()
    glColor4f(1,1,1,1);
 }
 
-void fireworkShader() {
+void fireworkShader(int freeze) {
     glUseProgram(shader[6]);
     //  Set time
     int id = glGetUniformLocation(shader[6], "time");
-    glUniform1f(id, glfwGetTime());
+    if(freeze == 0){ // COLIN added this whole if
+        firework_draw_time = glfwGetTime();
+        glUniform1f(id, firework_draw_time);
+    }else{
+        glUniform1f(id, firework_draw_time);
+    }
     id = glGetUniformLocation(shader[6], "Noise3D");
     glUniform1i(id, 1);
     id = glGetUniformLocation(shader[6], "img");
@@ -1661,7 +1655,7 @@ void fireworkShader() {
 }
 
 
-void Campground(int mode)
+void Campground(int freeze)
 {
    // campsite platform
    Cube(50,37,-39, 14,1,1, 0,0, tex[12]);
@@ -1672,15 +1666,13 @@ void Campground(int mode)
    // Table
    picktable(55,38,-57);
    // lake
-   // water_normmap_quad(11,lake_height,90, 50,50,1, -90,0,0, tex[16],tex[16]);
-   if(mode == 0){
+   if(freeze == 0){
       glDisable(GL_LIGHTING);
       lake(1,lake_height,89, 60,1,54);
       glEnable(GL_LIGHTING);
    }
    // terrain
    terrain();
-
 }
 
 void anyitem()
@@ -1695,6 +1687,8 @@ void anyitem()
 //
 void display(GLFWwindow* window)
 {
+   int width,height;
+   glfwGetWindowSize(window,&width,&height);
    if(mode == 1) glBindFramebuffer(GL_FRAMEBUFFER,framebuf[0]);
    //  Erase the window and the depth buffer
    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
@@ -1714,8 +1708,7 @@ void display(GLFWwindow* window)
       Campground(0);
       glDisable(GL_LIGHTING);
       sky(268,tex[13],tex[14]);
-      fireflies();
-      fireworkShader();
+      fireworkShader(0);
       // second frame buff to catch filped scene
       glBindFramebuffer(GL_FRAMEBUFFER,framebuf[1]);
       //  Erase the window and the depth buffer
@@ -1731,6 +1724,21 @@ void display(GLFWwindow* window)
       Campground(1);
       glDisable(GL_LIGHTING);
       sky(268,tex[13],tex[14]);
+      fireworkShader(1);
+      // 3rd frame
+      glBindFramebuffer(GL_FRAMEBUFFER,framebuf[2]);
+      // copy depth buffer from frame 0 into this frame
+      glBlitNamedFramebuffer(framebuf[0],framebuf[2],0,0,width,height,0,0,width,height,GL_DEPTH_BUFFER_BIT,GL_NEAREST);
+      //  Erase the window color
+      glClear(GL_COLOR_BUFFER_BIT);
+      //  Enable Z-buffering in OpenGL
+      glEnable(GL_DEPTH_TEST);
+      // set up view and proj
+      Projection(fov,asp,dim);
+      // camera
+      gluLookAt(PX,PY,PZ , PLX,PLY,PLZ , 0,1,0);
+      // flies
+      fireflies();
       // back to basic
       glBindFramebuffer(GL_FRAMEBUFFER,0);
       glDisable(GL_DEPTH_TEST);
@@ -1754,6 +1762,10 @@ void display(GLFWwindow* window)
       glBindTexture(GL_TEXTURE_2D, img[1]);
       id = glGetUniformLocation(shader[7],"tex_frame1");
       glUniform1i(id,1);
+      glActiveTexture(GL_TEXTURE2);
+      glBindTexture(GL_TEXTURE_2D, img[2]);
+      id = glGetUniformLocation(shader[7],"tex_frame2");
+      glUniform1i(id,2);
       //  Identity projection
       glMatrixMode(GL_PROJECTION);
       glLoadIdentity();
@@ -1905,16 +1917,16 @@ void reshape(GLFWwindow* window,int width,int height)
    //
    //  Delete old frame buffer, depth buffer and texture
    if(depthbuf[0]){
-      glDeleteRenderbuffers(2,depthbuf);
-      glDeleteTextures(2,img);
-      glDeleteFramebuffers(2,framebuf);
+      glDeleteRenderbuffers(3,depthbuf);
+      glDeleteTextures(3,img);
+      glDeleteFramebuffers(3,framebuf);
    }
    //  Allocate two textures, two frame buffer objects and a depth buffer
-   glGenFramebuffers(2,framebuf);   
-   glGenTextures(2,img);
-   glGenRenderbuffers(2,depthbuf);   
+   glGenFramebuffers(3,framebuf);   
+   glGenTextures(3,img);
+   glGenRenderbuffers(3,depthbuf);   
    //  Allocate and size texture
-   for (int k=0;k<2;k++)
+   for (int k=0;k<3;k++)
    {
       glBindTexture(GL_TEXTURE_2D,img[k]);
       glTexImage2D(GL_TEXTURE_2D,0,3,width,height,0,GL_RGB,GL_UNSIGNED_BYTE,NULL);
