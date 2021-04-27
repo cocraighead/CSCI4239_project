@@ -472,23 +472,21 @@ void DrawPart_s(void)
     glEnableVertexAttribArray(DUR_ARRAY_s);
     glEnableVertexAttribArray(INIT_VEL_ARRAY_s);
     //  Set transparent large particles
-    if (mode)
-    {
-        glEnable(GL_POINT_SPRITE);
-        glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-        glDepthMask(0);
-    }
+    
+    glEnable(GL_POINT_SPRITE);
+    glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glDepthMask(0);
+    
     //  Draw arrays
     glDrawArrays(GL_POINTS, 0, n_s * n_s);
     //  Reset
-    if (mode)
-    {
-        glDisable(GL_POINT_SPRITE);
-        glDisable(GL_BLEND);
-        glDepthMask(1);
-    }
+    
+    glDisable(GL_POINT_SPRITE);
+    glDisable(GL_BLEND);
+    glDepthMask(1);
+    
     //  Disable arrays
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
