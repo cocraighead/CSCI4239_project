@@ -79,11 +79,11 @@ float timeApog; // Time at which the initial particle reaches apogee and explode
 int explodeFlag = 1;
 int partCounter = 0;
 // Arrays for fireworks
-float x0[10] = {-35,-25,-15,-5,5,15,25,30,45,50 };
+float x0[10] = {40,80,0,80,40,0,-40,-80,-120,-160 };
 float y0_sos[10] = { 25,25,25,25,25,25,25,25,25,25 };
-float z0[10] =  { -35,-25,-15,-5,5,15,25,30,45,50 };
-float startTime[10] = { 0,2,5,6,9,10,13,15,17,17 };
-float yVel_0[10] = { 30,35,40,30,35,40,30,35,40,30 };
+float z0[10] =  { 200,220,180,200,220,180,200,220,18, 220 };
+float startTime[10] = { 0,2,5,17,9,7,13,15,17,15 };
+float yVel_0[10] = { 30,35,40,30,30,20,25,35,40,30 };
 //  Array Pointers
 float* vert = Vert;
 float* color = Color;
@@ -103,6 +103,7 @@ float firework_draw_time; // COLIN ADDED !!
 
 static char* Name_s[] = { "","","","","Vel","Start","Dur","Vel_init",NULL };
 //  Point arrays
+int n_s;
 #define N_s 150
 float Vert_s[3 * N_s * N_s * 2];
 float Color_s[3 * N_s * N_s * 2];
@@ -227,77 +228,77 @@ void InitPart(void)
         {
             // Beginning of  firework 1 
             if (i == 0 && j == 0) {
-                firework_init(0, 0.5, 0.5, 0.25, 0.75, 0.25, 0.725);
+                firework_init(0, 0.1, 0.8, 0.25, 0.5, 0.1, 0.3);
             // Beginning of  firework 2
             }
             else if (i == 1 && j == 1) {
-                firework_init(1, 0.25, 0.75, 0.25, 0.5, 0.25, 0.5);
+                firework_init(1, 0.1, 0.8, 0.25, 0.5, 0.25, 0.6);
             }
             // Beginning of  firework 3
             else if (i == 2 && j == 2) {
-                firework_init(2, 0.25, 0.75, 0.25, 0.5, 0.25, 0.5);
+                firework_init(2, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
             }
             // Beginning of  firework 4
             else if (i == 3 && j == 3) {
-                firework_init(3, 0.25, 0.75, 0.25, 0.5, 0.25, 0.5);
+                firework_init(3, 0.25, 0.3, 0.25, 0.7, 0.1, 0.7);
             }
             // Beginning of  firework 5
             else if (i == 4 && j == 4) {
-                firework_init(4, 0.25, 0.75, 0.25, 0.5, 0.25, 0.5);
+                firework_init(4, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
             }
             // Beginning of  firework 6
             else if (i == 5 && j == 5) {
-                firework_init(5, 0.25, 0.75, 0.25, 0.5, 0.25, 0.5);
+                firework_init(5, 0.1, 0.2, 0.1, 0.7, 0.1, 0.2 );
             }
             // Beginning of  firework 7
             else if (i == 6 && j == 6) {
-                firework_init(6, 0.25, 0.75, 0.25, 0.5, 0.25, 0.5);
+                firework_init(6, 0.25, 0.3, 0.25, 0.7, 0.1, 0.7);
             }
             // Beginning of  firework 8
             else if (i == 7 && j == 7) {
-                firework_init(7, 0.25, 0.75, 0.25, 0.5, 0.25, 0.5);
+                firework_init(7, 0.25, 0.75, 0.25, 0.7, 0.25, 0.3);
             }
             // Beginning of  firework 9
             else if (i == 8 && j == 8) {
-            firework_init(8, 0.25, 0.75, 0.25, 0.5, 0.25, 0.5);
+            firework_init(8, 0.1, 0.2, 0.1, 0.2, 0.1, 0.7);
             }
             // Beginning of  firework 10
             else if (i == 9 && j == 9) {
-            firework_init(9, 0.25, 0.75, 0.25, 0.5, 0.25, 0.5);
+            firework_init(9, 0.1, 0.8, 0.25, 0.5, 0.1, 0.3);
             }
 
             else { // Firework Explosion
 
             //  Location x,y,z using kinematics (ignoring drag) -> start where initial rocket ends at
                 if (partCounter < round(n * n / 10.0)) {
-                    firework_exp(0, 0.2, 0.5, 0.25, 0.75, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
+                    firework_exp(0, 0.1, 0.8, 0.25, 0.5, 0.1, 0.3, 15.0, 20.0, 15.0, 1.2);
                 }
                 else if ( (partCounter > round(n * n / 10.0)) && (partCounter < round(2*n * n / 10.0))) {
-                    firework_exp(1, 0.2, 0.5, 0.25, 0.75, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
+                    firework_exp(1, 0.1, 0.8, 0.25, 0.5, 0.25, 0.6, 15.0, 20.0, 15.0, 1.2);
                 }
                 else if ((partCounter > round(2*n * n / 10.0)) && (partCounter < round(3 * n * n / 10.0))) {
-                    firework_exp(2, 0.2, 0.5, 0.25, 0.75, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
+                    firework_exp(2, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
                 }
                 else if ((partCounter > round(3*n * n / 10.0)) && (partCounter < round(4 * n * n / 10.0))) {
-                    firework_exp(3, 0.2, 0.5, 0.25, 0.75, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
+                    firework_exp(3, 0.25, 0.3, 0.25, 0.7, 0.1, 0.7, 15.0, 20.0, 15.0, 1.2);
                 }
                 else if ((partCounter > round(4*n * n / 10.0)) && (partCounter < round(5 * n * n / 10.0))) {
-                    firework_exp(4, 0.2, 0.5, 0.25, 0.75, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
+                    firework_exp(4, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
                 }
                 else if ((partCounter > round(5*n * n / 10.0)) && (partCounter < round(6 * n * n / 10.0))) {
-                    firework_exp(5, 0.2, 0.5, 0.25, 0.75, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
+                    firework_exp(5, 0.1, 0.2, 0.1, 0.7, 0.1, 0.2, 15.0, 20.0, 15.0, 1.2);
                 }
                 else if ((partCounter > round(6*n * n / 10.0)) && (partCounter < round(7 * n * n / 10.0))) {
-                    firework_exp(6, 0.2, 0.5, 0.25, 0.75, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
+                    firework_exp(6, 0.25, 0.3, 0.25, 0.7, 0.1, 0.7, 15.0, 20.0, 15.0, 1.2);
                 }
                 else if ((partCounter > round(7*n * n / 10.0)) && (partCounter < round(8 * n * n / 10.0))) {
-                    firework_exp(7, 0.2, 0.5, 0.25, 0.75, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
+                    firework_exp(7, 0.25, 0.75, 0.25, 0.7, 0.25, 0.3, 15.0, 20.0, 15.0, 1.2);
                 }
                 else if ((partCounter > round(8*n * n / 10.0)) && (partCounter < round(9 * n * n / 10.0))) {
-                    firework_exp(8, 0.2, 0.5, 0.25, 0.75, 0.5, 0.5, 15.0, 20.0, 15.0, 1.2);
+                    firework_exp(8, 0.1, 0.2, 0.1, 0.2, 0.1, 0.7, 15.0, 20.0, 15.0, 1.2);
                 }
                 else {
-                    firework_exp(9, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 20.0, 25.0, 20.0, 1.0);
+                    firework_exp(9, 0.1, 0.8, 0.25, 0.5, 0.1, 0.3, 20.0, 25.0, 20.0, 1.0);
                 }
                 partCounter++;
             }
@@ -415,10 +416,10 @@ void InitPart_s(void)
 
     //  Loop over NxN patch
     int i, j;
-    n = N_s;
+    n_s = N_s;
 
-    for (i = 0; i < n; i++) {
-        for (j = 0; j < n; j++)
+    for (i = 0; i < n_s; i++) {
+        for (j = 0; j < n_s; j++)
         {
             // Beginning of  firework 1 
             if (i == 0 && j == 0) {
@@ -480,7 +481,7 @@ void DrawPart_s(void)
         glDepthMask(0);
     }
     //  Draw arrays
-    glDrawArrays(GL_POINTS, 0, n * n);
+    glDrawArrays(GL_POINTS, 0, n_s * n_s);
     //  Reset
     if (mode)
     {
