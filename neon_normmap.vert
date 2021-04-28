@@ -1,4 +1,4 @@
-//  Per-pixel lighting Vertex shader
+//  Lighting on normap quad behind neon sign
 #version 120
 
 varying vec3 View;
@@ -7,9 +7,7 @@ varying vec4 Ambient;
 
 void main()
 {
-   //
    //  Lighting values needed by fragment shader
-   //
    //  Vertex location in modelview coordinates
    vec3 P = vec3(gl_ModelViewMatrix * gl_Vertex);
    //  Light position

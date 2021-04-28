@@ -1,6 +1,4 @@
-//
 //  firefly fragment shader
-//
 #version 150
 
 uniform sampler2D firefly;

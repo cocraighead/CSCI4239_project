@@ -1,5 +1,4 @@
-//  Per-pixel Phong lighting
-//  Fragment shader
+// Normap frag shader
 #version 120
 
 varying vec3 View;

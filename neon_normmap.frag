@@ -1,5 +1,4 @@
-//  Per-pixel Phong lighting
-//  Fragment shader
+//  Fragment shader - Lighting on normap quad behind neon sign
 #version 120
 
 varying vec3 View;
@@ -49,7 +48,7 @@ vec4 phong()
       if (Is>0.0) color += pow(Is,gl_FrontMaterial.shininess)*gl_FrontLightProduct[0].specular;
    }
 
-   //  Return sum of color components
+   //  Return sum of color components - adds red in a radius around "sign center"
    color.rgb += my_mix(neon_light_color,vec3(0,0,0),r*length(gl_TexCoord[0].xy-neon_light_tp));
    return color;
 }

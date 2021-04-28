@@ -1,4 +1,4 @@
-//  Per-pixel lighting Vertex shader
+//  Normap vertex shader
 #version 120
 
 varying vec3 View;

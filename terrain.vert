@@ -1,4 +1,4 @@
-//  Per-pixel lighting Vertex shader
+//  Terrain vertex shader
 #version 120
 
 varying vec3 View;

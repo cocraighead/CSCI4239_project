@@ -1,7 +1,4 @@
-//
 //  firefly geometry shader
-//  Billboards point to quad
-//
 
 #version 150 compatibility
 #extension GL_EXT_geometry_shader4 : enable

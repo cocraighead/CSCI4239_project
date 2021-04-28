@@ -1,18 +1,18 @@
 /*
- * Final Project
+ * Final Project: Colin Craighead and Steven Priddy
  *
  *
  *  Key bindings:
- *  arrows     Change view angle
- *  space bar  Change view height
- *  m          Toggle scene
- *  0          Reset View angle
- *  l          Turn light movement on/off
- *  [ and ]    Change light position
- *  { and }    Change light height
- *  b/B        Toggle Fire fly blink
- *  wasdrf     Move an object wtih gex/gey/gez  
- *  ESC        Exit
+ *  arrows             Change view angle
+ *  space bar          Change view height up
+ *  Shift+space bar    Change View height down
+ *  m                  Toggle scene between scene 1 and 2
+ *  0                  Reset View angle to a good spot in the scene
+ *  l                  Turn light movement on/off
+ *  [ and ]            Change light radius
+ *  { and }            Change light height
+ *  b/B                Toggle Fire fly blink
+ *  ESC                Exit
  */
 #include "CSCIx239.h"
 // View globals
@@ -22,9 +22,9 @@ int fov=57;       //  Camera Fov
 float asp=1;      //  Screen aspect ratio
 float dim = 32;      //  World dimension
 // Scene modes globals
-#define MODE 3
+#define MODE 2
 int mode = 0;
-const char* text[] = {"Bar","Camp Ground","Any"};
+const char* text[] = {"Bar","Camp Ground"};
 // Shader Globals
 int shader[] = {0,0,0,0,0,0,0,0,0};  //  Shaders
 // light globals
@@ -137,12 +137,6 @@ float* start_s = Start_s;
 float* duration_s = Dur_s;
 float* vel_init_s = Vel_init_s;
 float radius_s = 0.08;
-
-
-// global edit
-int gex =0;
-int gey =0;
-int gez =0;
 // move camera
 float PX = 0;  // Player x location
 float PZ = 0;  // Player z location
@@ -473,19 +467,19 @@ void DrawPart_s(void)
     glEnableVertexAttribArray(INIT_VEL_ARRAY_s);
     //  Set transparent large particles
     
-    glEnable(GL_POINT_SPRITE);
-    glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    glDepthMask(0);
+   //  glEnable(GL_POINT_SPRITE);
+   //  glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
+   //  glEnable(GL_BLEND);
+   //  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+   //  glDepthMask(0);
     
     //  Draw arrays
     glDrawArrays(GL_POINTS, 0, n_s * n_s);
     //  Reset
     
-    glDisable(GL_POINT_SPRITE);
-    glDisable(GL_BLEND);
-    glDepthMask(1);
+   //  glDisable(GL_POINT_SPRITE);
+   //  glDisable(GL_BLEND);
+   //  glDepthMask(1);
     
     //  Disable arrays
     glDisableClientState(GL_VERTEX_ARRAY);
@@ -635,6 +629,7 @@ float neonsignarr[] = {-1.0,0.0,0.0 ,0.0,1.0,1.0,
                         .601,.162,0.0 ,1.0,.455,.557, // line 10
                        };
 
+// uses the neon sign shader to urn the lines into a neon sign
 void neon_sign(float x, float y, float z, float s){
    glPushMatrix();
    // transformations
@@ -659,7 +654,7 @@ void neon_sign(float x, float y, float z, float s){
    glUseProgram(0);
 }
 
-
+// sky box
 void sky(float D, int sidetex, int topbottex)
 {
    glColor3f(1,1,1);
@@ -711,6 +706,7 @@ void sky(float D, int sidetex, int topbottex)
 
 }
 
+// green lake quad
 void lake(float x, float y, float z, float dx, float dy, float dz){
    glColor3f(0.0,1.0,0.0);
    glBegin(GL_QUADS);
@@ -722,59 +718,7 @@ void lake(float x, float y, float z, float dx, float dy, float dz){
    glColor3f(1.0,1.0,1.0);
 }
 
-void water_normmap_quad(float x, float y, float z, float dx, float dy, float dz, float rx, float ry, float rz, int image_tex, int norm_tex)
-{
-   //  Select shader
-   glUseProgram(shader[1]);
-   //  Walls material and color
-   float color[][4] = {{0,0,0,0},{.5,.5,.5,0},{1,1,0,0},{0,1,0,0},{0,1,1,0},{0,0,1,0},{1,0,1,0},{1,1,1,1}};
-   glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,96.0);
-   glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,color[7]);
-   glMaterialfv(GL_FRONT_AND_BACK,GL_EMISSION,color[0]);
-   glColor4fv(color[1]);
-   glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT,color[1]);
-   glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,color[1]);
-   // set texture uniforms
-   glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, image_tex);
-   int id = glGetUniformLocation(shader[1],"tex");
-   glUniform1i(id,0);
-   glActiveTexture(GL_TEXTURE1);
-   glBindTexture(GL_TEXTURE_2D, norm_tex);
-   id = glGetUniformLocation(shader[1],"norms");
-   glUniform1i(id,1);
-   // cube front face
-   // save transformation
-   glPushMatrix();
-   // transformations
-   glTranslated(x,y,z);
-   glRotated(rx,1,0,0);
-   glRotated(ry,0,1,0);
-   // get current model view matrix
-   float modelview_matrix[16]; 
-   glGetFloatv(GL_MODELVIEW_MATRIX, modelview_matrix); 
-   // get Normal matrix
-   float normal_matrix[9];
-   mat4normalMatrix(modelview_matrix, normal_matrix);
-   id = glGetUniformLocation(shader[1],"NormalMatrix");
-   glUniformMatrix3fv(id,1,0,normal_matrix);
-   // Wall
-   glBegin(GL_QUADS);
-   glTexCoord2f(0,0); glVertex3f(-1*dx,-1*dy, 0);
-   glTexCoord2f(1*dx,0); glVertex3f(+1*dx,-1*dy, 0);
-   glTexCoord2f(1*dx,1*dy); glVertex3f(+1*dx,+1*dy, 0);
-   glTexCoord2f(0,1*dy); glVertex3f(-1*dx,+1*dy, 0);
-   glEnd();
-   glPopMatrix();
-   // unbind textures
-   glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, 0);
-   glActiveTexture(GL_TEXTURE1);
-   glBindTexture(GL_TEXTURE_2D, 0);
-   //  Revert to fixed pipeline
-   glUseProgram(0);
-}
-
+// Quad with a texture and normmap per pixel lighting
 void normmap_quad(float x, float y, float z, float dx, float dy, float dz, float rx, float ry, float rz, int image_tex, int norm_tex)
 {
    //  Select shader
@@ -830,6 +774,7 @@ void normmap_quad(float x, float y, float z, float dx, float dy, float dz, float
    glUseProgram(0);
 }
 
+// Norm mpa quads behind the neon sign
 void neonsign_normmap_quad(float x, float y, float z, float dx, float dy, float dz, float rx, float ry, float rz, int image_tex, int norm_tex, float lx, float ly)
 {
    //  Select shader
@@ -890,6 +835,7 @@ void neonsign_normmap_quad(float x, float y, float z, float dx, float dy, float 
    glUseProgram(0);
 }
 
+// Cube of normmap quads
 void normmap_cube(float x, float y, float z, float dx, float dy, float dz, float rx, float ry, float rz, int image_tex, int norm_tex)
 {
    //  Select shader
@@ -1084,6 +1030,7 @@ void normmap_cube(float x, float y, float z, float dx, float dy, float dz, float
    glUseProgram(0);
 }
 
+// Normaped disc in record player
 void record_disc(float x, float y, float z, float dx, float dy, float dz, float rx, float ry, float rz, int image_tex, int norm_tex)
 {
    //  Select shader
@@ -1143,7 +1090,7 @@ void record_disc(float x, float y, float z, float dx, float dy, float dz, float 
    glUseProgram(0);
 }
 
-// record player
+// record player cubes and disc
 void record_player(int x, int y, int z)
 {
    record_disc(x+0,y+0.08,z+0, 0.85,0.85,1, -90,0,zh, tex[7],tex[8]);
@@ -1163,6 +1110,7 @@ void record_player(int x, int y, int z)
    normmap_cube(x+0,y+-.25,z+0, 1.5,.3,1, 0,0,0, tex[5],tex[6]);
 }
 
+// tables in the bar
 void table(int x, int y, int z)
 {
    // table top
@@ -1177,6 +1125,7 @@ void table(int x, int y, int z)
    Cube(x+0,y+.1,z+0, 1.2,.2,.1, 0,0, tex[5]);
 }
 
+// picknick table in the camp ground
 void picktable(int x, int y, int z)
 {
    // table top
@@ -1199,6 +1148,7 @@ void picktable(int x, int y, int z)
    Cube(x+-2,y+.9,z+-2.1, .2,.1,1.5, 30,-90, tex[5]);
 }
 
+// Chairs in the bar
 void chair(int x, int y, int z, int ry)
 {
    glPushMatrix();
@@ -1217,6 +1167,7 @@ void chair(int x, int y, int z, int ry)
    glPopMatrix();
 }
 
+// soda particles
 void sodaShader(int x, int y, int z) {
     glUseProgram(shader[8]);
     //  Set time
@@ -1236,6 +1187,7 @@ void sodaShader(int x, int y, int z) {
     glUseProgram(0);
 }
 
+// soda machine
 void sodaDispenser(float x, float y, float z)
 {
     // one table leg
@@ -1249,6 +1201,7 @@ void sodaDispenser(float x, float y, float z)
     sodaShader(x,y,z);
 }
 
+// Normap quads and details in the bar
 void Bar()
 {
    // floor 
@@ -1340,7 +1293,7 @@ void Bar()
    sodaDispenser(-9, 4.35, -8);
 }
 
-//  Fly
+//  Fire fly structure
 typedef struct
 {
    float x,y,z;  //  Position
@@ -1349,12 +1302,10 @@ typedef struct
    float start;  // blink start time
    float length; // blink lenght
 }  Fly;
-// Fly array
+// Fire fly array
 Fly* flys=NULL;
 
-//
 //  Advance time one time step for fly k
-//
 void Move(int k)
 {
    int k0 = k+src;
@@ -1498,6 +1449,7 @@ void InitLoc()
    }
 }
 
+// terrain that uses texture and terrain shader to create highted terrain
 void terrain()
 {
    //  Select shader
@@ -1588,6 +1540,7 @@ void terrain()
    glUseProgram(0);
 }
 
+// creates fire fly particles
 void fireflies()
 {
    // disable depth for particles
@@ -1628,11 +1581,12 @@ void fireflies()
    glColor4f(1,1,1,1);
 }
 
+// creates the fire work particles
 void fireworkShader(int freeze) {
     glUseProgram(shader[6]);
     //  Set time
     int id = glGetUniformLocation(shader[6], "time");
-    if(freeze == 0){ // COLIN added this whole if
+    if(freeze == 0){ // dont move the partices on this call
         firework_draw_time = glfwGetTime();
         glUniform1f(id, firework_draw_time);
     }else{
@@ -1653,7 +1607,7 @@ void fireworkShader(int freeze) {
 
 }
 
-
+// draws the campground scene
 void Campground(int freeze)
 {
    // campsite platform
@@ -1674,18 +1628,11 @@ void Campground(int freeze)
    terrain();
 }
 
-void anyitem()
-{
-   //record_player(0,0,0);
-   // water_normmap_quad(0,0,0, 4,2,1, -90,0,0, tex[16],tex[16]);
-   neon_sign(0,0,0,1);
-}
 
-//
-//  Refresh display
-//
+//  Draws open gl scene
 void display(GLFWwindow* window)
 {
+   // Window dims
    int width,height;
    glfwGetWindowSize(window,&width,&height);
    if(mode == 1) glBindFramebuffer(GL_FRAMEBUFFER,framebuf[0]);
@@ -1697,10 +1644,9 @@ void display(GLFWwindow* window)
    Projection(fov,asp,dim);
    // camera stuff
    gluLookAt(PX,PY,PZ , PLX,PLY,PLZ , 0,1,0);
-   //View(th,ph,fov,dim);
    //  Enable lighting
    Lighting(light_radius*Cos(zh),light_elv,light_radius*Sin(zh) ,l_ambient,l_diffuse,l_specular);
-   
+   // Two scenes
    if(mode == 0){
       Bar();
    }else if(mode == 1){
@@ -1745,17 +1691,10 @@ void display(GLFWwindow* window)
       glClear(GL_COLOR_BUFFER_BIT);
       //  Enable shader
       glUseProgram(shader[7]);
-      //  Set screen resolution uniforms
-      int id,width,height;
-      glfwGetWindowSize(window,&width,&height);
-      id = glGetUniformLocation(shader[7],"dX");
-      glUniform1f(id,1.0/width);
-      id = glGetUniformLocation(shader[7],"dY");
-      glUniform1f(id,1.0/height);
       // set texture uniform
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, img[0]);
-      id = glGetUniformLocation(shader[7],"tex_frame0");
+      int id = glGetUniformLocation(shader[7],"tex_frame0");
       glUniform1i(id,0);
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, img[1]);
@@ -1779,25 +1718,21 @@ void display(GLFWwindow* window)
       glEnd();
       //  Disable shader
       glUseProgram(0);
-   }else{
-      anyitem();
    }
 
    glDisable(GL_LIGHTING);
    //  Display parameters
    glColor3f(1,1,1);
    glWindowPos2i(5,5);
-   Print("FPS=%d Angle=%d,%d zh=%d l_rad=%d l_ele=%.1f %s | gex=%d, gey=%d, gez=%d",
-      FramesPerSecond(),th,ph,zh,light_radius,light_elv,text[mode],gex,gey,gez,g_time);
+   Print("FPS=%d l_rad=%d l_ele=%.1f %s",
+      FramesPerSecond(),light_radius,light_elv,text[mode]);
    
    ErrCheck("display");
    glFlush();
    glfwSwapBuffers(window);
 }
 
-//
 //  Key pressed callback
-//
 void key(GLFWwindow* window,int key,int scancode,int action,int mods)
 {
    //  Discard key releases (keeps PRESS and REPEAT)
@@ -1809,16 +1744,28 @@ void key(GLFWwindow* window,int key,int scancode,int action,int mods)
    //  Exit on ESC
    if (key == GLFW_KEY_ESCAPE)
       glfwSetWindowShouldClose(window,1);
-   //  Reset view angle
+   //  Reset view angle - to a location based on the scene
    else if (key == GLFW_KEY_0){
-      th = ph = 0;
-      PX = 0;  // Player x location
-      PZ = 0;  // Player z location
-      PY = 0;
-      PLX = 0; // Players looking at x location
-      PLZ = -1; // Players looking at z location
-      PLY = 0;
-      pheta = 0; // Angle the player is turned at
+      if(!mode){
+         th = ph = 0;
+         PX = 0;  // Player x location
+         PZ = 0;  // Player z location
+         PY = 7;
+         PLX = 0; // Players looking at x location
+         PLZ = -1; // Players looking at z location
+         PLY = 7;
+         pheta = 0; // Angle the player is turned at
+      }else{
+         th = ph = 0;
+         PX = 0;  // Player x location
+         PZ = 0;  // Player z location
+         PY = 49;
+         PLX = 0; // Players looking at x location
+         PLZ = -1; // Players looking at z location
+         PLY = 49;
+         pheta = 0; // Angle the player is turned at
+      }
+      
    }
    //  Switch shaders
    else if (key==GLFW_KEY_M)
@@ -1851,19 +1798,6 @@ void key(GLFWwindow* window,int key,int scancode,int action,int mods)
    //  Down arrow key - decrease elevation by 5 degrees
    else if (key == GLFW_KEY_DOWN)
       ph -= 5;
-   // global edits
-   else if (key == GLFW_KEY_W)
-      gey += 1;
-   else if (key == GLFW_KEY_S)
-      gey -= 1;
-   else if (key == GLFW_KEY_A)
-      gex -= 1;
-   else if (key == GLFW_KEY_D)
-      gex += 1;
-   else if (key == GLFW_KEY_R)
-      gez -= 1;
-   else if (key == GLFW_KEY_F)
-      gez += 1;
    // Change camera
    double dist = .5;
    int turn_deg = 5;
@@ -1944,13 +1878,9 @@ void reshape(GLFWwindow* window,int width,int height)
    //  Switch back to regular display buffer
    glBindFramebuffer(GL_FRAMEBUFFER,0);
    ErrCheck("Framebuffer");
-   //  Update projection
-   //Projection(fov,asp,dim);
 }
 
-//
 //  Main program with GLFW event loop
-//
 int main(int argc,char* argv[])
 {
    //  Initialize GLFW
